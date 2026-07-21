@@ -1196,13 +1196,15 @@ function renderLeaderboard(rows, rowsId='lbrows'){
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);}
 
+const WORKER_URL='https://sambun-score.gwon8300.workers.dev';
 async function submitScore(){
   if(submitted||!lastRun)return;
   let nick=getNick();
   if(!nick){nick='익명섬주민'; setNick(nick);}
   const btn=$('submitbtn'); btn.disabled=true; btn.textContent='등록 중…';
   try{
-    const r=await fetch(SB_URL+'/rest/v1/scores',{method:'POST',headers:SB_HEAD,
+    // 점수 등록은 Worker를 거친다 (검증 + service_role로 저장). 게임 키로 직접 insert는 차단됨.
+    const r=await fetch(WORKER_URL,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({nickname:nick.slice(0,12),score:lastRun.score,grade:lastRun.grade,builds:lastRun.builds})});
     if(!r.ok)throw new Error('HTTP '+r.status);
     submitted=true; btn.textContent='✅ 등록 완료!';
