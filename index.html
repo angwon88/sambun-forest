@@ -435,22 +435,26 @@ const CHARACTERS=[
   {key:'gizmo', name:'기즈모', desc:'순수한 털뭉치',
    accent:'#f2c088', accentDim:'#d89a5a',
    speed:1.0, cmdMod:-1, tideBonus:0, scoreMul:1.0, otterOk:true,
-   special:'채집 커맨드 1키 짧음',
+   res2x:[], rainMul:1.0, randomMul:false,
+   special:'채집 커맨드 1키 짧음 (쉬움)',
    failMsg:['앗, 놓쳤다…','우웅…'], overMsg:'으아…', deliverMsg:['고마워!','기뻐!']},
-  {key:'monkey', name:'빨간 원숭이', desc:'날쌘 개구쟁이',
+  {key:'monkey', name:'빨간 원숭이', desc:'날쌘 숲의 채집꾼',
    accent:'#e5473b', accentDim:'#b5342a',
-   speed:1.25, cmdMod:0, tideBonus:0, scoreMul:1.0, otterOk:true,
-   special:'이동 속도 빠름',
+   speed:1.15, cmdMod:0, tideBonus:0, scoreMul:1.0, otterOk:true,
+   res2x:['wood','fruit'], rainMul:1.0, randomMul:false,
+   special:'나무·과일 채집 2배 · 이동 빠름',
    failMsg:['바나나가 아니잖아!','우끼끼…'], overMsg:'꺅!', deliverMsg:['우끼!','좋아좋아!']},
   {key:'frog', name:'발광 개구리', desc:'신비한 물의 요정',
    accent:'#6ee04c', accentDim:'#4caf2c',
    speed:1.0, cmdMod:0, tideBonus:1.0, scoreMul:1.0, otterOk:true,
-   special:'물에서 1초 더 버팀',
+   res2x:['shell'], rainMul:1.5, randomMul:false,
+   special:'조개 채집 2배 · 비 올 때 점수 1.5배 · 물에서 1초 버팀',
    failMsg:['손이 미끄러워…','개굴…'], overMsg:'꿀꺽…', deliverMsg:['개굴!','고마워개굴!']},
-  {key:'dark', name:'흑기즈모', desc:'사악한 천재',
+  {key:'dark', name:'흑기즈모', desc:'사악한 도박꾼 천재',
    accent:'#8a5ad8', accentDim:'#6a3ab8',
-   speed:1.0, cmdMod:0, tideBonus:0, scoreMul:1.2, otterOk:false,
-   special:'점수 1.2배 (해달이 무서워함)',
+   speed:1.0, cmdMod:1, tideBonus:0, scoreMul:1.0, otterOk:false,
+   res2x:[], rainMul:1.0, randomMul:true,
+   special:'커맨드 1키 더 김 · 채집 랜덤 배율 x1~x3 (해달이 무서워함)',
    failMsg:['흥, 내 능력 밖이군','쯧…'], overMsg:'...치', deliverMsg:['...흥','받아둬']},
 ];
 const CHAR_IMGS={};
@@ -652,6 +656,7 @@ function cmdPress(d){
 function endCmdUI(){$('cmdbox').style.display='none';$('cmdpad').classList.remove('on');}
 function cmdSuccess(){
   const r=S.cmd.res, def=RES_DEFS[r.type];
+  const ch=curChar();
   const golden=r.golden;
   let amt=def.base+(S.combo>=3?1:0);
   if(golden)amt*=3;
@@ -662,10 +667,17 @@ function cmdSuccess(){
   let bonus=3; if(S.combo>=2){bonus=3*S.combo;S.comboBonus+=bonus-3;
     $('combo').textContent='콤보 x'+S.combo+'!';$('combo').style.opacity=1;}
   if(golden)bonus*=3;
-  S.score+=Math.round(bonus*curChar().scoreMul);
+  // ----- character multipliers -----
+  let mul=1, tags=[];
+  if(ch.res2x.includes(def.give)){mul*=2; tags.push('x2');}          // 원숭이 나무·과일 / 개구리 조개
+  if(ch.rainMul>1 && S.weather==='storm'){mul*=ch.rainMul; tags.push('☔x'+ch.rainMul);}  // 개구리 비
+  if(ch.randomMul){const rnd=1+Math.random()*2; mul*=rnd; tags.push('🎲x'+rnd.toFixed(1));} // 흑기즈모 랜덤 x1~x3
+  const gained=Math.round(bonus*mul);
+  S.score+=gained;
   const cols={tree:['#3f8f4f','#6abf5e'],rock:['#9a9a9a','#c4c4c4'],fruit:['#e5473b','#ffd94d'],shell:['#f2a9c4','#ffe6ee']};
   burst(r.x*TS+18,r.y*TS+18, golden?['#ffd700','#fff3a0','#ffb800']:cols[r.type], golden?16:8);
-  floatText(r.x*TS+18,r.y*TS, (golden?'✨황금! ':'')+'+'+amt+' '+RES_EMOJI[def.give], golden?'#ffd700':'#ffd94d');
+  const tagStr=tags.length?' '+tags.join(' '):'';
+  floatText(r.x*TS+18,r.y*TS, (golden?'✨황금! ':'')+'+'+amt+' '+RES_EMOJI[def.give]+tagStr, golden?'#ffd700':(tags.length?ch.accent:'#ffd94d'));
   bumpRes(def.give); if(golden)SFX.ding(); else SFX.harvest(); shakeT=Math.max(shakeT, golden?.18:.08);
   S.cmd=null; endCmdUI(); updateHUD();
 }
