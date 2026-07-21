@@ -160,6 +160,32 @@
     border:3px solid var(--ink);border-radius:10px;padding:7px 12px;cursor:pointer;
     box-shadow:0 3px 0 var(--ink)}
   #cornerrank:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink)}
+  #cornerhelp{position:absolute;top:52px;left:12px;z-index:22;font-family:inherit;
+    font-size:13px;font-weight:900;color:var(--ink);background:#8fd8ff;
+    border:3px solid var(--ink);border-radius:10px;padding:7px 12px;cursor:pointer;
+    box-shadow:0 3px 0 var(--ink)}
+  #cornerhelp:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink)}
+  /* help modal */
+  #helpmodal{position:absolute;inset:0;z-index:30;display:none;align-items:center;
+    justify-content:center;background:rgba(8,26,14,.78);padding:16px}
+  #helpmodal.open{display:flex}
+  #helpcard{background:var(--cream);color:var(--ink);border:4px solid var(--ink);border-radius:14px;
+    padding:18px 20px 16px;width:min(90vw,340px);max-height:82%;overflow-y:auto;position:relative;
+    box-shadow:0 10px 0 rgba(0,0,0,.4);animation:cardin .3s cubic-bezier(.2,1.6,.4,1)}
+  #helpcard h3{font-size:15px;margin-bottom:12px;text-align:center;letter-spacing:1px}
+  #helpclose{position:absolute;top:8px;right:8px;font-family:inherit;font-size:14px;font-weight:900;
+    color:var(--ink);background:transparent;border:2px solid var(--ink);border-radius:8px;
+    width:28px;height:28px;cursor:pointer;line-height:1}
+  #helpclose:active{transform:scale(.9)}
+  .hrow{display:flex;justify-content:space-between;align-items:center;font-size:12px;
+    padding:4px 4px;border-bottom:1px dashed rgba(29,42,31,.15)}
+  .hrow span{color:#3a4a3c}
+  .hrow b{color:#c9622a;font-weight:900;text-align:right}
+  .hrow.hsub{justify-content:center;color:#1d2a1f;font-weight:900;font-size:12px;
+    border-bottom:none;margin-top:8px;background:rgba(29,42,31,.07);border-radius:5px}
+  .hrow.hwarn b{color:#3f8fc4}
+  .hnote{margin-top:12px;font-size:11px;text-align:center;color:#7a6f52;
+    background:rgba(255,176,77,.15);padding:8px;border-radius:6px;line-height:1.5}
   /* ranking modal popup */
   #rankmodal{position:absolute;inset:0;z-index:30;display:none;align-items:center;
     justify-content:center;background:rgba(8,26,14,.78);padding:16px}
@@ -224,6 +250,7 @@
 
     <div class="overlay" id="title">
       <button id="cornerrank">🏆 랭킹</button>
+      <button id="cornerhelp">❓ 점수 규칙</button>
       <h1>삼분의숲</h1>
       <div class="sub">— 밀물이 오기 전에 —</div>
       <div class="howto">
@@ -253,6 +280,25 @@
         <h3>🏆 전국 랭킹 TOP 10</h3>
         <div id="tlbrows"></div>
         <div id="tlbstatus"></div>
+      </div>
+    </div>
+
+    <div id="helpmodal">
+      <div id="helpcard">
+        <button id="helpclose">✕</button>
+        <h3>🎯 점수 올리는 법</h3>
+        <div class="hrow"><span>🌲 채집 성공</span><b>+3 (콤보 시 배수!)</b></div>
+        <div class="hrow"><span>✨ 황금 자원</span><b>3배 점수</b></div>
+        <div class="hrow hsub">🔨 건설 — 종류별 점수</div>
+        <div class="hrow"><span>⛺ 텐트</span><b>+30</b></div>
+        <div class="hrow"><span>🔥 모닥불 · 🐚 조개탑</span><b>+15</b></div>
+        <div class="hrow"><span>🌴 야자수</span><b>+12</b></div>
+        <div class="hrow"><span>🌼 화단 · 🚩 깃발</span><b>+10</b></div>
+        <div class="hrow"><span>🚧 울타리</span><b>+5</b></div>
+        <div class="hrow"><span>🦦 해달 부탁</span><b>+30 & 생명+1</b></div>
+        <div class="hrow"><span>🏠 건물 다양성</span><b>종류당 +10 (7종=+70)</b></div>
+        <div class="hrow hwarn"><span>🌊 건물 침수</span><b>점수 차감!</b></div>
+        <div class="hnote">등급: S(7종+부탁3) · A 380 · B 240 · C 130 · F 조난</div>
       </div>
     </div>
 
@@ -1210,6 +1256,9 @@ $('cornerrank').addEventListener('click',()=>{
 });
 $('rankclose').addEventListener('click',()=>$('rankmodal').classList.remove('open'));
 $('rankmodal').addEventListener('click',e=>{ if(e.target===$('rankmodal'))$('rankmodal').classList.remove('open'); });
+$('cornerhelp').addEventListener('click',()=>{ $('helpmodal').classList.add('open'); SFX.select(); });
+$('helpclose').addEventListener('click',()=>$('helpmodal').classList.remove('open'));
+$('helpmodal').addEventListener('click',e=>{ if(e.target===$('helpmodal'))$('helpmodal').classList.remove('open'); });
 $('startbtn').addEventListener('click',start);
 $('againbtn').addEventListener('click',start);
 $('homebtn').addEventListener('click',goHome);
