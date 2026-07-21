@@ -466,7 +466,7 @@ const CHARACTERS=[
    accent:'#8a5ad8', accentDim:'#6a3ab8',
    speed:1.0, cmdMod:0, tideBonus:0, scoreMul:1.0, otterOk:false,
    res2x:[], rainMul:1.0, randomMul:true,
-   special:'채집 랜덤 배율 x1~x4 (해달이 무서워함)',
+   special:'채집 랜덤 배율 x1~x3 (해달이 무서워함)',
    failMsg:['흥, 내 능력 밖이군','쯧…'], overMsg:'...치', deliverMsg:['...흥','받아둬']},
 ];
 const CHAR_IMGS={};
@@ -689,7 +689,7 @@ function cmdSuccess(){
   let mul=1, tags=[];
   if(ch.res2x.includes(def.give)){mul*=2; tags.push('x2');}          // 원숭이 나무·과일 / 개구리 조개
   if(ch.rainMul>1 && S.weather==='storm'){mul*=ch.rainMul; tags.push('☔x'+ch.rainMul);}  // 개구리 비
-  if(ch.randomMul){const rnd=1+Math.random()*3; mul*=rnd; tags.push('🎲x'+rnd.toFixed(1));} // 흑기즈모 랜덤 x1~x4
+  if(ch.randomMul){const rnd=1+Math.random()*2; mul*=rnd; tags.push('🎲x'+rnd.toFixed(1));} // 흑기즈모 랜덤 x1~x3
   if(hasBuild('flag')){mul*=1.15; tags.push('🚩+15%');} // 깃발 효과
   const gained=Math.round(bonus*mul);
   S.score+=gained;
