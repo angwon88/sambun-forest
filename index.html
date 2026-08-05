@@ -66,6 +66,9 @@
   #cmdpad .cd{grid-column:2;grid-row:2}#cmdpad .cr{grid-column:3;grid-row:2}
   #combo{position:absolute;top:52px;right:8px;font-size:16px;font-weight:900;color:#ffd94d;
     text-shadow:2px 2px 0 rgba(0,0,0,.5);opacity:0;transition:opacity .2s}
+  #buffbar{position:absolute;top:76px;right:8px;font-size:12px;font-weight:900;color:#8fd8ff;
+    text-shadow:2px 2px 0 rgba(0,0,0,.5);opacity:0;transition:opacity .2s;
+    background:rgba(8,26,14,.7);padding:3px 8px;border-radius:6px}
   #tidewarn{position:absolute;top:44px;left:50%;transform:translateX(-50%);
     color:#8fd8ff;font-weight:900;font-size:15px;text-shadow:2px 2px 0 rgba(0,0,0,.7);
     background:rgba(12,28,16,.7);padding:3px 12px;border-radius:8px;white-space:nowrap;
@@ -94,6 +97,7 @@
     padding:9px 16px;font-size:clamp(11px,2.4vw,13px);line-height:1.55;margin-bottom:12px;text-align:left}
   .howto .hl{color:#6ee0a0;font-weight:900;text-shadow:1px 1px 0 rgba(0,0,0,.4)}
   .howto .hl2{color:#ffd700;font-weight:900;text-shadow:1px 1px 0 rgba(0,0,0,.5)}
+  .howto .hl3{color:#6ec8ff;font-weight:900;text-shadow:1px 1px 0 rgba(0,0,0,.4)}
   .howto .hltip{display:inline-block;margin-top:4px;color:#8fd8ff;font-size:.92em;
     background:rgba(143,216,255,.12);padding:2px 8px;border-radius:6px}
   .btn{pointer-events:auto;cursor:pointer;font-family:inherit;font-weight:900;font-size:18px;
@@ -239,6 +243,7 @@
       <div id="score">⭐ 0</div>
       <div id="hearts">❤️❤️❤️</div>
       <div id="combo"></div>
+      <div id="buffbar"></div>
       <div id="buildbar"></div>
       <div id="cmdbox">
         <div class="lbl" id="cmdlbl">채집!</div>
@@ -264,7 +269,8 @@
         🔨 자원 모아 건설 (숫자 1~7)<br>
         <span class="hl">🏠 건물마다 특수 효과! 커맨드↓·황금↑·콤보↑ 등</span><br>
         <span class="hl2">🏝️ 7종 다 지으면 +200점 & 황금 급증!</span><br>
-        🦦 해달 부탁 완료 → <b>생명 +1</b>❤️<br>
+        🦦 해달 부탁 완료 → <b>생명 +1</b>❤️ <span class="hl">+ 캐릭터별 버프!</span><br>
+        <span class="hl3">⚡ 콤보 5회 푸른 오라 · 10회 황금 오라 (최대 배수)</span><br>
         ⚡ 벼락·👻 유령 피격 → 생명 -1 (예고 있음!)<br>
         🌊 밀물이 랜덤한 방향에서 섬을 삼킨다…<br>
         &nbsp;&nbsp;&nbsp;생명 0 또는 3분 종료 시 끝!<br>
@@ -295,9 +301,17 @@
       <div id="helpcard">
         <button id="helpclose">✕</button>
         <h3>🎯 점수 & 건물 가이드</h3>
-        <div class="hrow"><span>🌲 채집 성공</span><b>+3 (콤보 배수!)</b></div>
+        <div class="hrow"><span>🪵 나무 · 🪨 돌 (3키)</span><b>+5 × 콤보</b></div>
+        <div class="hrow"><span>🍎 과일 · 🐚 조개 (2키)</span><b>+3 × 콤보</b></div>
+        <div class="hrow"><span>⚡ 콤보 5회</span><b>🔵 푸른 오라</b></div>
+        <div class="hrow"><span>⚡ 콤보 10회</span><b>🟡 황금 오라 (최대)</b></div>
         <div class="hrow"><span>✨ 황금 자원</span><b>3배 점수</b></div>
-        <div class="hrow"><span>🦦 해달 부탁</span><b>+30 & 생명+1</b></div>
+        <div class="hrow hsub">🦦 해달 납품 — 캐릭터별 버프!</div>
+        <div class="hrow"><span>공통 보상</span><b>+30점 & 생명+1</b></div>
+        <div class="hrow"><span>🤍 기즈모</span><b>⏱️+0.5초 · 🛡️보호막+1</b></div>
+        <div class="hrow"><span>🐒 원숭이</span><b>💨 속도 2배 (10초)</b></div>
+        <div class="hrow"><span>💚 개구리</span><b>☔ 폭풍우 소환 (15초)</b></div>
+        <div class="hrow"><span>🖤 흑기즈모</span><b>🐦‍⬛까마귀 · 🎲x3 확정</b></div>
         <div class="hrow hsub">🔨 건설 — 종류당 1개 · 효과 있음!</div>
         <div class="hrow"><span>⛺ 텐트 +40</span><b>커맨드 1키 ↓</b></div>
         <div class="hrow"><span>🔥 모닥불 +25</span><b>자원 빨리 리스폰</b></div>
@@ -413,10 +427,10 @@ let S=null, running=false, lastT=0, shakeT=0, isTouch=('ontouchstart' in window)
 if(isTouch)document.body.classList.add('touch');
 
 const RES_DEFS={
-  tree :{give:'wood', base:2, zone:'grass', cmd:3},
-  rock :{give:'stone',base:2, zone:'grass', cmd:3},
-  fruit:{give:'fruit',base:2, zone:'grass', cmd:2},
-  shell:{give:'shell',base:2, zone:'sand',  cmd:2},
+  tree :{give:'wood', base:2, zone:'grass', cmd:3, pts:5},
+  rock :{give:'stone',base:2, zone:'grass', cmd:3, pts:5},
+  fruit:{give:'fruit',base:2, zone:'grass', cmd:2, pts:3},
+  shell:{give:'shell',base:2, zone:'sand',  cmd:2, pts:3},
 };
 const RES_EMOJI={wood:'🪵',stone:'🪨',fruit:'🍎',shell:'🐚'};
 const BUILDS=[
@@ -464,10 +478,10 @@ const CHARACTERS=[
    failMsg:['손이 미끄러워…','개굴…'], overMsg:'꿀꺽…', deliverMsg:['개굴!','고마워개굴!']},
   {key:'dark', name:'흑기즈모', desc:'사악한 도박꾼 천재',
    accent:'#8a5ad8', accentDim:'#6a3ab8',
-   speed:1.0, cmdMod:0, tideBonus:0, scoreMul:1.0, otterOk:false,
+   speed:1.0, cmdMod:0, tideBonus:0, scoreMul:1.0, otterOk:true,
    res2x:[], rainMul:1.0, randomMul:true,
-   special:'채집 랜덤 배율 x1~x3 (해달이 무서워함)',
-   failMsg:['흥, 내 능력 밖이군','쯧…'], overMsg:'...치', deliverMsg:['...흥','받아둬']},
+   special:'채집 랜덤 배율 x1~x3 · 까마귀가 찾아옴 🐦‍⬛',
+   failMsg:['흥, 내 능력 밖이군','쯧…'], overMsg:'...치', deliverMsg:['...흥','까악']},
 ];
 const CHAR_IMGS={};
 let charsLoaded=0;
@@ -495,6 +509,7 @@ function newGame(){
     resources:[], buildings:[], particles:[], floats:[],
     warned:false, warned2:false, floodTime:{}, tideDir:{x:0,y:0},
     sel:-1, cmd:null, completeBonus:false,
+    otterBuff:null, speedBuffT:0, cmdTimeBonus:0, failShield:0,
     lightnings:[], ghosts:[],
     nextBolt:8+Math.random()*6, nextGhost:14+Math.random()*8,
     weather:'clear', weatherT:0, nextWeather:20+Math.random()*15, tideGrace:0,
@@ -650,7 +665,8 @@ function startCmd(res){
   const def=RES_DEFS[res.type];
   let len=Math.max(1, def.cmd + (S.t>=120?1:0) + curChar().cmdMod + (hasBuild('tent')?-1:0));
   const seq=[]; for(let i=0;i<len;i++)seq.push(DIRS[Math.floor(Math.random()*4)]);
-  S.cmd={res, seq, idx:0, time:1.5, max:1.5};
+  const cmdT = 1.5 + (S.cmdTimeBonus||0);
+  S.cmd={res, seq, idx:0, time:cmdT, max:cmdT};
   S.sel=-1; updateHUD();
   $('cmdbox').style.display='block';
   $('cmdlbl').textContent=RES_EMOJI[def.give]+' 채집! 순서대로 입력';
@@ -682,14 +698,27 @@ function cmdSuccess(){
   setTimeout(()=>{if(S&&!S.over)spawnRes(r.type);},respawnDelay);
   const comboDur = hasBuild('flower') ? 6 : 5;
   S.combo=(S.comboT>0)?S.combo+1:1; S.comboT=comboDur;
-  let bonus=3; if(S.combo>=2){bonus=3*S.combo;S.comboBonus+=bonus-3;
-    $('combo').textContent='콤보 x'+S.combo+'!';$('combo').style.opacity=1;}
+  const COMBO_CAP=10;                                  // 배수는 10회에서 상한
+  const effCombo=Math.min(S.combo,COMBO_CAP);
+  const basePts=def.pts||3;                            // 3키 자원(나무·돌)은 5점, 2키는 3점
+  let bonus=basePts;
+  if(S.combo>=2){
+    bonus=basePts*effCombo; S.comboBonus+=bonus-basePts;
+    const capMark=S.combo>COMBO_CAP?' MAX!':'';
+    $('combo').textContent='콤보 x'+effCombo+capMark;
+    $('combo').style.opacity=1;
+    $('combo').style.color = effCombo>=COMBO_CAP ? '#ffd700' : (effCombo>=5 ? '#6ec8ff' : '');
+  }
   if(golden)bonus*=3;
   // ----- character multipliers -----
   let mul=1, tags=[];
   if(ch.res2x.includes(def.give)){mul*=2; tags.push('x2');}          // 원숭이 나무·과일 / 개구리 조개
   if(ch.rainMul>1 && S.weather==='storm'){mul*=ch.rainMul; tags.push('☔x'+ch.rainMul);}  // 개구리 비
-  if(ch.randomMul){const rnd=1+Math.random()*2; mul*=rnd; tags.push('🎲x'+rnd.toFixed(1));} // 흑기즈모 랜덤 x1~x3
+  if(ch.randomMul){
+    // 흑기즈모: 해달 버프가 있으면 x3 확정, 없으면 랜덤 x1~x3
+    if(S.otterBuff==='darkLucky'){ mul*=3; tags.push('🎲x3 확정!'); S.otterBuff=null; updateBuffUI(); }
+    else { const rnd=1+Math.random()*2; mul*=rnd; tags.push('🎲x'+rnd.toFixed(1)); }
+  }
   if(hasBuild('flag')){mul*=1.15; tags.push('🚩+15%');} // 깃발 효과
   const gained=Math.round(bonus*mul);
   S.score+=gained;
@@ -704,10 +733,17 @@ const FAIL_MSG={tree:'벌에 쏘였다…🐝',rock:'돌에 발을 찧었다…'
 function cmdFail(){
   const r=S.cmd.res;
   r.cool=0.8; SFX.fail(); shakeT=.15;
+  // 🛡️ 보호막이 있으면 생명·콤보 유지하고 보호막 1개 소모
+  if(S.failShield>0){
+    S.failShield--;
+    floatText(r.x*TS+18,r.y*TS,'🛡️ 보호막! (남은 '+S.failShield+'개)','#8fd8ff');
+    S.cmd=null; endCmdUI(); updateBuffUI();
+    return;
+  }
   const cf=curChar().failMsg;
   const msg = Math.random()<0.5 ? (FAIL_MSG[r.type]||'실패!') : cf[Math.floor(Math.random()*cf.length)];
   floatText(r.x*TS+18,r.y*TS,msg,'#ff8877');
-  S.combo=0;S.comboT=0;$('combo').style.opacity=0;
+  S.combo=0;S.comboT=0;$('combo').style.opacity=0;$('combo').style.color='';
   S.cmd=null; endCmdUI();
   damage('cmdfail');
 }
@@ -761,12 +797,51 @@ function newRequest(){
   const t=['wood','stone','fruit','shell'];S.otter.req={type:t[Math.floor(Math.random()*4)],n:2+Math.floor(Math.random()*3)};
 }
 function deliver(){
-  const o=S.otter; S.inv[o.req.type]-=o.req.n; o.done++; S.score+=Math.round(30*curChar().scoreMul);
-  const dm=curChar().deliverMsg; o.mood='❤️'; o.moodT=2;
+  const o=S.otter, ch=curChar();
+  S.inv[o.req.type]-=o.req.n; o.done++; S.score+=Math.round(30*ch.scoreMul);
+  const dm=ch.deliverMsg; o.mood='❤️'; o.moodT=2;
   floatText(o.tx*TS+18,o.ty*TS-6,'+30⭐ '+dm[Math.floor(Math.random()*dm.length)],'#ff9ad5');
   burst(o.tx*TS+18,o.ty*TS+8,['#ff9ad5','#ffd94d'],12);
   SFX.ding(); heal();
+  applyOtterBuff(ch);                       // 캐릭터별 해달 버프
   o.req=null; o.reqT=7+Math.random()*4; updateHUD();
+}
+/* ---------- 해달 버프 (캐릭터별) ---------- */
+function applyOtterBuff(ch){
+  const px=S.px, py=S.py-34;
+  if(ch.key==='gizmo'){
+    S.cmdTimeBonus=(S.cmdTimeBonus||0)+0.5;      // 커맨드 제한시간 +0.5초 (누적)
+    S.failShield=(S.failShield||0)+1;            // 실패 보호막 +1 (누적)
+    floatText(px,py,'⏱️ +0.5초 · 🛡️ 보호막 +1!','#f2c088');
+    S.otterBuff='gizmoTime';
+  } else if(ch.key==='monkey'){
+    S.speedBuffT=10;                              // 10초간 이동속도 2배
+    floatText(px,py,'💨 이동속도 2배! (10초)','#e5473b');
+    S.otterBuff='monkeySpeed';
+  } else if(ch.key==='frog'){
+    S.weather='storm'; S.weatherT=15;             // 폭풍우 15초 즉시 발동
+    $('tidewarn').textContent='⛈️ 개구리의 비! (15초)';
+    $('tidewarn').classList.add('urgent'); $('tidewarn').style.opacity=1;
+    setTimeout(()=>{$('tidewarn').style.opacity=0;},2500);
+    floatText(px,py,'☔ 폭풍우 소환! (15초)','#6ee04c');
+    S.otterBuff='frogRain';
+  } else if(ch.key==='dark'){
+    S.otterBuff='darkLucky';                      // 다음 채집 x3 확정
+    floatText(px,py,'🎲 다음 채집 x3 확정!','#8a5ad8');
+  }
+  updateBuffUI();
+  SFX.select(); shakeT=Math.max(shakeT,.15);
+}
+function updateBuffUI(){
+  const el=$('buffbar'); if(!el)return;
+  const parts=[];
+  if(S.failShield>0) parts.push('🛡️×'+S.failShield);
+  if(S.cmdTimeBonus>0) parts.push('⏱️+'+S.cmdTimeBonus.toFixed(1)+'s');
+  if(S.speedBuffT>0) parts.push('💨'+S.speedBuffT.toFixed(1)+'s');
+  if(S.otterBuff==='darkLucky') parts.push('🎲x3');
+  const txt=parts.join('  ');
+  el.textContent=txt;
+  el.style.opacity=txt?1:0;
 }
 
 /* ---------- hazards ---------- */
@@ -890,7 +965,8 @@ function update(dt){
     if(S.moving){
       dx/=Math.max(1,mag); dy/=Math.max(1,mag);
       if(Math.abs(dx)>Math.abs(dy))S.dir=dx>0?1:3; else S.dir=dy>0?2:0;
-      const sp=145*curChar().speed*dt, nx=S.px+dx*sp, ny=S.py+dy*sp;
+      const spMul = (S.speedBuffT>0) ? 2 : 1;
+      const sp=145*curChar().speed*spMul*dt, nx=S.px+dx*sp, ny=S.py+dy*sp;
       if(walkable(nx,S.py))S.px=nx;
       if(walkable(S.px,ny))S.py=ny;
       S.walk+=dt*10;
@@ -908,7 +984,8 @@ function update(dt){
     S.px+=Math.sign(gx)*110*dt; S.py+=Math.sign(gy)*110*dt;
   } else S.tideGrace=0;
 
-  if(S.comboT>0){S.comboT-=dt;if(S.comboT<=0){S.combo=0;$('combo').style.opacity=0;}}
+  if(S.comboT>0){S.comboT-=dt;if(S.comboT<=0){S.combo=0;$('combo').style.opacity=0;$('combo').style.color='';}}
+  if(S.speedBuffT>0){S.speedBuffT-=dt; updateBuffUI(); if(S.speedBuffT<=0){S.speedBuffT=0;updateBuffUI();}}
   for(const p of S.particles){p.t+=dt;p.x+=p.vx;p.y+=p.vy;p.vy+=.12;}
   S.particles=S.particles.filter(p=>p.t<p.life);
   for(const f of S.floats)f.t+=dt; S.floats=S.floats.filter(f=>f.t<1.1);
@@ -990,10 +1067,33 @@ function render(){
   if(ph>0.82){const a=Math.min(1,(ph-0.82)/0.18);ctx.fillStyle='rgba(35,25,80,'+(a*0.28)+')';ctx.fillRect(0,0,cv.width,cv.height);}
   // weather overlays
   if(S.weather==='storm'){
-    ctx.fillStyle='rgba(20,30,60,0.28)';ctx.fillRect(0,0,cv.width,cv.height);
-    ctx.strokeStyle='rgba(180,200,255,0.35)';ctx.lineWidth=1;
-    for(let i=0;i<40;i++){const rx=(i*97+ (t*900)%cv.width)%cv.width; const ry=((i*53)+(t*900))%cv.height;
-      ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx-4,ry+12);ctx.stroke();}
+    ctx.fillStyle='rgba(20,30,60,0.34)';ctx.fillRect(0,0,cv.width,cv.height);
+    // 빗방울 낙하 (배열 없이 결정적 계산 — 각 방울마다 고유 속도/위치)
+    ctx.lineCap='round';
+    for(let i=0;i<130;i++){
+      const seed=i*137.5;
+      const speed=460+(i%7)*90;                       // 방울마다 속도 다름
+      const x=(seed*3.7)%cv.width;
+      const y=((seed*11.3)+t*speed)%(cv.height+40)-20;
+      const len=9+(i%5)*3;                            // 길이도 제각각
+      const a=0.30+(i%4)*0.11;                        // 진하기도 제각각
+      ctx.strokeStyle='rgba(190,215,255,'+a+')';
+      ctx.lineWidth=(i%6===0)?2:1;                    // 가끔 굵은 줄기
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-3,y+len);ctx.stroke();
+    }
+    // 바닥에 튀는 물방울
+    for(let i=0;i<26;i++){
+      const seed=i*211.7;
+      const cyc=(t*1.7+i*0.37)%1;                     // 0~1 반복 주기
+      if(cyc>0.45)continue;                            // 잠깐만 보임
+      const sx=(seed*5.1)%cv.width;
+      const sy=(seed*7.9)%cv.height;
+      const r=1+cyc*7;
+      ctx.strokeStyle='rgba(190,215,255,'+(0.4*(1-cyc/0.45))+')';
+      ctx.lineWidth=1;
+      ctx.beginPath();ctx.arc(sx,sy,r,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.lineCap='butt';
   } else if(S.weather==='sunny'){
     ctx.fillStyle='rgba(255,240,150,0.12)';ctx.fillRect(0,0,cv.width,cv.height);
   }
@@ -1017,6 +1117,23 @@ function drawCat(){
   }
   ctx.save();
   if(blink)ctx.globalAlpha=.45;
+  // ----- 콤보 오라: 5회 푸른빛, 10회 이상 황금빛 -----
+  if(S.combo>=5){
+    const isGold=S.combo>=10;
+    const pulse=0.3+0.2*Math.sin(S.t*(isGold?8:5));
+    const col=isGold?'#ffd700':'#6ec8ff';
+    ctx.save();
+    ctx.globalAlpha=(blink?.45:1)*pulse;
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.arc(cx,cy-bob,SZ*(isGold?0.78:0.68),0,7); ctx.fill();
+    // 황금은 반짝이는 링 하나 더
+    if(isGold){
+      ctx.globalAlpha=(blink?.45:1)*(0.5+0.3*Math.sin(S.t*10));
+      ctx.strokeStyle='#fff3a0'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(cx,cy-bob,SZ*0.85,0,7); ctx.stroke();
+    }
+    ctx.restore();
+  }
   // frog glow aura
   if(ch.key==='frog'){
     ctx.globalAlpha=(blink?.45:1)*(0.25+0.15*Math.sin(S.t*4));
@@ -1053,21 +1170,39 @@ function drawCat(){
 }
 function drawOtter(){
   const o=S.otter; let ox=o.tx*TS+18, oy=o.ty*TS+18+Math.sin(S.t*3)*1.5;
+  const isCrow = curChar().key==='dark';
   if(o.leaving){oy+=o.leaving*26;ctx.globalAlpha=Math.max(0,1-o.leaving/2.2);}
   px(ox-9,oy+10,18,4,'rgba(0,0,0,.2)');
-  px(ox-10,oy-6,20,16,'#8a5a35'); px(ox-6,oy+1,12,9,'#c99a68');
-  px(ox-8,oy-14,16,11,'#8a5a35'); px(ox-5,oy-8,10,5,'#c99a68');
-  px(ox-5,oy-11,2,2,'#1d2a1f'); px(ox+3,oy-11,2,2,'#1d2a1f'); px(ox-1,oy-8,2,2,'#1d2a1f');
-  px(ox+9,oy+2,6,4,'#6d4526'); ctx.globalAlpha=1;
+  if(isCrow){
+    // 까마귀 — 흑기즈모 전용 NPC
+    const flap=Math.sin(S.t*6)*2;
+    px(ox-11,oy-4+flap,7,9,'#1a1520');   // 왼쪽 날개
+    px(ox+4,oy-4-flap,7,9,'#1a1520');    // 오른쪽 날개
+    px(ox-8,oy-6,16,16,'#241d2e');       // 몸통
+    px(ox-5,oy+1,10,8,'#332a40');        // 가슴
+    px(ox-7,oy-15,14,11,'#1a1520');      // 머리
+    px(ox-6,oy-19,4,5,'#1a1520');        // 깃털
+    px(ox+2,oy-19,4,5,'#1a1520');
+    px(ox-5,oy-12,3,3,'#e5473b');        // 빨간 눈
+    px(ox+2,oy-12,3,3,'#e5473b');
+    px(ox-1,oy-8,7,4,'#e8a33a');         // 노란 부리
+    px(ox+8,oy+4,5,3,'#1a1520');         // 꼬리
+  } else {
+    px(ox-10,oy-6,20,16,'#8a5a35'); px(ox-6,oy+1,12,9,'#c99a68');
+    px(ox-8,oy-14,16,11,'#8a5a35'); px(ox-5,oy-8,10,5,'#c99a68');
+    px(ox-5,oy-11,2,2,'#1d2a1f'); px(ox+3,oy-11,2,2,'#1d2a1f'); px(ox-1,oy-8,2,2,'#1d2a1f');
+    px(ox+9,oy+2,6,4,'#6d4526');
+  }
+  ctx.globalAlpha=1;
   if(!o.gone&&!o.leaving&&(o.req||o.moodT>0)){
     const msg=o.moodT>0?o.mood:(RES_EMOJI[o.req.type]+'×'+o.req.n);
     ctx.font='bold 13px monospace';ctx.textAlign='center';
     const w=ctx.measureText(msg).width+14;
-    px(ox-w/2,oy-38,w,20,'#f6efd9'); px(ox-3,oy-19,6,4,'#f6efd9');
-    ctx.fillStyle='#1d2a1f';ctx.fillText(msg,ox,oy-24);
+    px(ox-w/2,oy-38,w,20, isCrow?'#3a3145':'#f6efd9'); px(ox-3,oy-19,6,4, isCrow?'#3a3145':'#f6efd9');
+    ctx.fillStyle=isCrow?'#f6efd9':'#1d2a1f';ctx.fillText(msg,ox,oy-24);
   }
   if(o.leaving&&o.leaving<1.5){ctx.font='bold 12px monospace';ctx.textAlign='center';
-    ctx.fillStyle='#f6efd9';ctx.fillText('먼저 갈게~ 🌊',ox,oy-30);}
+    ctx.fillStyle='#f6efd9';ctx.fillText(isCrow?'까악… 🌊':'먼저 갈게~ 🌊',ox,oy-30);}
 }
 function drawGhost(g,t){
   const gx=g.x*TS+18, gy=g.y*TS+18, a=g.warn>0?0.25:0.7;
@@ -1126,7 +1261,7 @@ function endGame(cause){
     story='"'+ch.overMsg+'" '+ch.name+'은(는) 끝내 섬에서 버티지 못했다. 벼락과 유령을 피하지 못했고, 지어둔 캠프도 파도에 흩어졌다. 다음엔 위험 표시를 잘 보고 피하자.';
   } else if(types.size>=5 && (req>=3 || (!ch.otterOk&&S.score>=600)) && S.hp>0){
     grade='S'; word='전설의 개척자!! 완벽한 정착!';
-    story='🏝️ 밀물이 섬을 삼키는 3분 동안, '+ch.name+'은(는) 완벽한 캠프를 세웠다. '+(ch.otterOk?'해달은 만족스럽게 헤엄쳐 떠나며 다음에도 놀러 오겠다 약속했다. ':'해달은 멀리서 지켜볼 뿐이었지만, ')+'이 섬은 전설로 남았다.';
+    story='🏝️ 밀물이 섬을 삼키는 3분 동안, '+ch.name+'은(는) 완벽한 캠프를 세웠다. '+(ch.key==='dark'?'까마귀는 만족스럽게 날개를 펴고 떠났다. ':'해달은 만족스럽게 헤엄쳐 떠나며 다음에도 놀러 오겠다 약속했다. ')+'이 섬은 전설로 남았다.';
   } else if(S.score>=380){
     grade='A'; word='해달도 감동한 캠프!';
     story='🦦 아늑한 캠프가 완성됐다. '+ch.name+'의 솜씨에 모두가 감탄했다. 밀물이 밀려와도 이 하루는 오래 기억될 것이다.';
