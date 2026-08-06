@@ -321,7 +321,7 @@
         <div class="hrow"><span>🐚 조개탑 +35</span><b>황금자원 확률 ↑</b></div>
         <div class="hrow"><span>🚩 깃발 +45</span><b>채집 점수 +15%</b></div>
         <div class="hrow"><span>🏝️ 7종 완성</span><b>+200 & 황금 급증!</b></div>
-        <div class="hrow hwarn"><span>🌊 건물 침수</span><b>점수 차감 주의!</b></div>
+        <div class="hrow hwarn"><span>🏝️ 건물 위치</span><b>안쪽 안전지대에만!</b></div>
         <div class="hnote">등급: S(건물 5종+부탁3) · A 380 · B 240 · C 130 · F 조난</div>
       </div>
     </div>
@@ -768,7 +768,7 @@ function tryBuild(){
   const b=BUILDS[S.sel], t=facingTile();
   if(hasBuild(b.key)){SFX.deny();floatText(S.px,S.py-20,'이미 지었어!','#ff8877');return;}
   if(!canAfford(b.cost)){SFX.deny();floatText(S.px,S.py-20,'자원 부족!','#ff8877');return;}
-  if(!placeable(t.x,t.y)){SFX.deny();floatText(S.px,S.py-20,'여긴 안 돼!','#ff8877');return;}
+  if(!placeable(t.x,t.y)){SFX.deny();floatText(S.px,S.py-20,'안쪽 안전지대에만!','#ff8877');return;}
   for(const[k,v]of Object.entries(b.cost))S.inv[k]-=v;
   S.buildings.push({type:b.key,x:t.x,y:t.y,anim:0});
   S.score+=Math.round(b.pts*curChar().scoreMul);
@@ -786,7 +786,9 @@ function tryBuild(){
 }
 function placeable(x,y){
   if(x<0||y<0||x>=MW||y>=MH)return false;
-  if(tileType(x,y)===0||isFlooded(x,y))return false;
+  // 건물은 밀물이 닿지 않는 안쪽 잔디(타입 2)에만 지을 수 있다
+  if(tileType(x,y)!==2)return false;
+  if(isFlooded(x,y))return false;
   if(S.resources.some(r=>r.x===x&&r.y===y))return false;
   if(S.buildings.some(b=>b.x===x&&b.y===y))return false;
   if(x===S.otter.tx&&y===S.otter.ty)return false;
@@ -888,13 +890,8 @@ function update(dt){
   if(!S.warned2&&S.t>=160){S.warned2=true;$('tidewarn').textContent='⚠️ 곧 밀물이 가득 찹니다!';$('tidewarn').classList.add('urgent');$('tidewarn').style.opacity=1;SFX.warn();setTimeout(()=>SFX.warn(),400);}
   if(S.warned2&&S.t<178)$('tidewarn').style.opacity=(0.5+0.5*Math.abs(Math.sin(S.t*4)));
   if(S.t>=124){
-    const drownedB=S.buildings.filter(b=>isFlooded(b.x,b.y));
-    if(drownedB.length){
-      for(const b of drownedB){const def=BUILDS.find(x=>x.key===b.type);S.score=Math.max(0,S.score-def.pts);
-        burst(b.x*TS+18,b.y*TS+18,['#3f8fc4','#8fd8ff'],10);floatText(b.x*TS+18,b.y*TS,'침수! -'+def.pts,'#8fd8ff');}
-      S.buildings=S.buildings.filter(b=>!isFlooded(b.x,b.y));
-      SFX.splash(); shakeT=Math.max(shakeT,.15); updateHUD();
-    }
+    // 건물은 안전지대(안쪽 잔디)에만 지을 수 있으므로 침수 페널티 없음.
+    // 마지막에 섬이 잠겨도 지어둔 캠프는 기록으로 남는다.
     S.resources=S.resources.filter(r=>!isFlooded(r.x,r.y));
     if(!S.otter.gone&&!S.otter.leaving&&isFlooded(S.otter.tx,S.otter.ty))S.otter.leaving=.001;
   }
@@ -1025,6 +1022,14 @@ function render(){
   }
 
   if(S.sel>=0&&!S.cmd){
+    // 건설 가능 구역(안쪽 잔디) 은은하게 표시
+    ctx.save();
+    ctx.globalAlpha=0.13+0.05*Math.sin(t*4);
+    ctx.fillStyle='#ffd94d';
+    for(let gy=0;gy<MH;gy++)for(let gx=0;gx<MW;gx++){
+      if(tileType(gx,gy)===2&&!isFlooded(gx,gy))ctx.fillRect(gx*TS,gy*TS,TS,TS);
+    }
+    ctx.restore();
     const ft=facingTile(), ok=placeable(ft.x,ft.y)&&canAfford(BUILDS[S.sel].cost);
     ctx.globalAlpha=.5; ctx.fillStyle=ok?'#ffd94d':'#ff5d47'; ctx.fillRect(ft.x*TS+2,ft.y*TS+2,TS-4,TS-4); ctx.globalAlpha=1;
   }
