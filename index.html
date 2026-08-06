@@ -90,6 +90,20 @@
   /* ---- overlays ---- */
   .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
     justify-content:center;text-align:center;background:rgba(8,26,14,.88);z-index:20;padding:16px}
+  /* ---- story screen ---- */
+  #intro{display:none;background:#061a10;z-index:26;cursor:pointer}
+  #introtext{font-size:clamp(14px,2.9vw,19px);line-height:2.1;color:#f6efd9;
+    letter-spacing:1px;max-width:560px;white-space:pre-wrap;min-height:180px;
+    text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  #introtext .em{color:#8fd8ff}
+  #introhint{margin-top:34px;font-size:12px;color:#5d7a63;letter-spacing:2px;
+    animation:hintblink 1.6s ease-in-out infinite}
+  @keyframes hintblink{0%,100%{opacity:.35}50%{opacity:1}}
+  /* 밀물 물결 — 화면 아래에서 잔잔하게 */
+  #intro::after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;
+    background:linear-gradient(to top,rgba(63,143,196,.34),rgba(63,143,196,0));
+    animation:tiderise 4s ease-in-out infinite;pointer-events:none}
+  @keyframes tiderise{0%,100%{transform:translateY(14px)}50%{transform:translateY(0)}}
   #title h1{font-size:clamp(26px,6vw,44px);color:var(--sun);text-shadow:3px 3px 0 var(--ink),6px 6px 0 rgba(0,0,0,.3);
     letter-spacing:2px;margin-bottom:2px}
   #title .sub{font-size:clamp(12px,3vw,15px);color:#8fd8ff;margin-bottom:12px;letter-spacing:1px}
@@ -258,6 +272,11 @@
       </div>
     </div>
 
+    <div class="overlay" id="intro">
+      <div id="introtext"></div>
+      <div id="introhint">아무 키나 누르세요</div>
+    </div>
+
     <div class="overlay" id="title">
       <button id="cornerrank">🏆 랭킹</button>
       <button id="cornerhelp">❓ 점수 규칙</button>
@@ -401,7 +420,8 @@ const SFX={
   heal(){tone(660,.1,'sine',.12);tone(880,.14,'sine',.12,0,.08);tone(1320,.2,'sine',.1,0,.16);},
   stamp(){tone(90,.22,'square',.2,-40);tone(60,.3,'sawtooth',.16,-20,.05);},
   splash(){noise(.35,.14);tone(300,.3,'sine',.08,-200);},
-  select(){tone(520,.06,'square',.08);}
+  select(){tone(520,.06,'square',.08);},
+  type(){tone(1150+Math.random()*180,.022,'square',.018);}
 };
 
 /* ---------- BGM (Web Audio, gentle island loop) ---------- */
@@ -620,6 +640,10 @@ function heal(){
 
 /* ---------- input ---------- */
 addEventListener('keydown',e=>{
+  // 스토리 화면에서는 아무 키나 눌러 진행
+  if($('intro').style.display==='flex'){
+    e.preventDefault(); storyAdvance(); return;
+  }
   if(!running)return;
   const k=e.key.toLowerCase();
   if(['arrowup','arrowdown','arrowleft','arrowright'].includes(k)||e.key===' ')e.preventDefault();
@@ -1398,6 +1422,46 @@ function loop(ts){
   if(S&&(running||S.over))render();
   requestAnimationFrame(loop);
 }
+/* ---------- 인트로 스토리 ---------- */
+const STORY_LINES=[
+  '우리가 살던 섬이, 오늘 밤 사라진대.',
+  '',
+  '마지막 3분.',
+  '이 섬에서 보낸 시간을 캠프에 남기자.',
+  '물이 다 차오르기 전에.'
+];
+let storyTimer=null, storyDone=false;
+function showStory(){
+  audio();
+  $('title').style.display='none';
+  $('intro').style.display='flex';
+  $('introtext').textContent='';
+  $('introhint').textContent='아무 키나 누르세요';
+  storyDone=false;
+  const full=STORY_LINES.join('\n');
+  let i=0;
+  const step=()=>{
+    if(i>=full.length){ finishStoryTyping(); return; }
+    const ch=full[i++];
+    $('introtext').textContent+=ch;
+    if(ch!==' '&&ch!=='\n'&&i%2===0)SFX.type&&SFX.type();
+    // 문장 끝에서는 살짝 쉬어간다
+    const delay = (ch==='.'||ch==='!') ? 260 : (ch==='\n' ? 190 : 42);
+    storyTimer=setTimeout(step,delay);
+  };
+  step();
+}
+function finishStoryTyping(){
+  if(storyTimer){clearTimeout(storyTimer);storyTimer=null;}
+  $('introtext').textContent=STORY_LINES.join('\n');
+  storyDone=true;
+  $('introhint').textContent='▶ 아무 키나 눌러 시작';
+}
+function storyAdvance(){
+  if(!storyDone){ finishStoryTyping(); SFX.select(); return; }
+  $('intro').style.display='none';
+  start();
+}
 function start(){
   audio(); newGame();
   $('rankmodal').classList.remove('open');
@@ -1408,6 +1472,8 @@ function start(){
 }
 function goHome(){
   running=false; stopBGM();
+  if(storyTimer){clearTimeout(storyTimer);storyTimer=null;}
+  $('intro').style.display='none';
   $('result').style.display='none'; $('hud').style.display='none';
   $('tidewarn').style.opacity=0; $('tidewarn').classList.remove('urgent');
   document.documentElement.style.setProperty('--sun','#ffb04d');   // reset accent
@@ -1451,9 +1517,10 @@ $('rankmodal').addEventListener('click',e=>{ if(e.target===$('rankmodal'))$('ran
 $('cornerhelp').addEventListener('click',()=>{ $('helpmodal').classList.add('open'); SFX.select(); });
 $('helpclose').addEventListener('click',()=>$('helpmodal').classList.remove('open'));
 $('helpmodal').addEventListener('click',e=>{ if(e.target===$('helpmodal'))$('helpmodal').classList.remove('open'); });
-$('startbtn').addEventListener('click',start);
+$('startbtn').addEventListener('click',showStory);
 $('againbtn').addEventListener('click',start);
 $('homebtn').addEventListener('click',goHome);
+$('intro').addEventListener('click',storyAdvance);
 loadSprites(()=>{ buildCharSelect(); showCharInfo(); });
 requestAnimationFrame(loop);
 </script>
