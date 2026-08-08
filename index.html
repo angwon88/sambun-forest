@@ -450,7 +450,7 @@ const RES_DEFS={
   tree :{give:'wood', base:2, zone:'grass', cmd:3, pts:5},
   rock :{give:'stone',base:2, zone:'grass', cmd:3, pts:5},
   fruit:{give:'fruit',base:2, zone:'grass', cmd:2, pts:3},
-  shell:{give:'shell',base:2, zone:'sand',  cmd:2, pts:3},
+  shell:{give:'shell',base:2, zone:'shore', cmd:2, pts:3},
 };
 const RES_EMOJI={wood:'🪵',stone:'🪨',fruit:'🍎',shell:'🐚'};
 const BUILDS=[
@@ -490,11 +490,11 @@ const CHARACTERS=[
    res2x:['wood','fruit'], rainMul:1.0, randomMul:false,
    special:'나무·과일 채집 2배 · 이동 빠름',
    failMsg:['바나나가 아니잖아!','우끼끼…'], overMsg:'꺅!', deliverMsg:['우끼!','좋아좋아!']},
-  {key:'frog', name:'발광 개구리', desc:'신비한 물의 요정',
+  {key:'frog', name:'발광 개구리', desc:'후반형 · 물의 지배자',
    accent:'#6ee04c', accentDim:'#4caf2c',
    speed:1.0, cmdMod:0, tideBonus:1.0, scoreMul:1.0, otterOk:true,
-   res2x:['shell'], rainMul:1.5, randomMul:false,
-   special:'조개 채집 2배 · 비 올 때 점수 1.5배 · 물에서 1초 버팀',
+   res2x:['shell'], rainMul:1.5, randomMul:false, waterFree:true,
+   special:'물에서 피해 없음 · 물 위 이동 2배 · 조개 2배 · 비 올 때 1.5배',
    failMsg:['손이 미끄러워…','개굴…'], overMsg:'꿀꺽…', deliverMsg:['개굴!','고마워개굴!']},
   {key:'dark', name:'흑기즈모', desc:'사악한 도박꾼 천재',
    accent:'#8a5ad8', accentDim:'#6a3ab8',
@@ -569,8 +569,10 @@ function freeTile(x,y,zone){
   const tt=tileType(x,y);
   if(zone==='grass'&&tt!==2)return false;
   if(zone==='sand'&&tt!==1)return false;
-  if(isFlooded(x,y))return false;
-  if(S.floodTime[x+','+y]<132)return false;
+  if(zone==='shore'&&tt!==1&&tt!==2)return false;   // 조개: 모래·잔디 모두 가능
+  // 조개는 물에 잠긴 타일에도 생성된다 (바다 생물)
+  if(isFlooded(x,y)&&zone!=='shore')return false;
+  if(!isFlooded(x,y)&&S.floodTime[x+','+y]<132&&zone!=='shore')return false;
   if(Math.abs(x*TS+18-S.px)<40&&Math.abs(y*TS+18-S.py)<40)return false;
   if(x===S.otter.tx&&y===S.otter.ty)return false;
   if(S.resources.some(r=>r.x===x&&r.y===y))return false;
@@ -916,7 +918,8 @@ function update(dt){
   if(S.t>=124){
     // 건물은 안전지대(안쪽 잔디)에만 지을 수 있으므로 침수 페널티 없음.
     // 마지막에 섬이 잠겨도 지어둔 캠프는 기록으로 남는다.
-    S.resources=S.resources.filter(r=>!isFlooded(r.x,r.y));
+    // 조개는 바다 생물 — 물에 잠겨도 남는다 (개구리 후반 영역)
+    S.resources=S.resources.filter(r=>r.type==='shell'||!isFlooded(r.x,r.y));
     if(!S.otter.gone&&!S.otter.leaving&&isFlooded(S.otter.tx,S.otter.ty))S.otter.leaving=.001;
   }
 
@@ -986,23 +989,31 @@ function update(dt){
     if(S.moving){
       dx/=Math.max(1,mag); dy/=Math.max(1,mag);
       if(Math.abs(dx)>Math.abs(dy))S.dir=dx>0?1:3; else S.dir=dy>0?2:0;
-      const spMul = (S.speedBuffT>0) ? 2 : 1;
-      const sp=145*curChar().speed*spMul*dt, nx=S.px+dx*sp, ny=S.py+dy*sp;
-      if(walkable(nx,S.py))S.px=nx;
-      if(walkable(S.px,ny))S.py=ny;
+      const ch=curChar();
+      const inWater = ch.waterFree && !walkable(S.px,S.py);
+      const spMul = (S.speedBuffT>0 ? 2 : 1) * (inWater ? 2 : 1);
+      const sp=145*ch.speed*spMul*dt, nx=S.px+dx*sp, ny=S.py+dy*sp;
+      // 개구리는 물 위도 헤엄쳐 다닌다 (맵 밖으로만 못 나감)
+      const canGo=(x,y)=> ch.waterFree ? inBounds(x,y) : walkable(x,y);
+      if(canGo(nx,S.py))S.px=nx;
+      if(canGo(S.px,ny))S.py=ny;
       S.walk+=dt*10;
     }
     if(S.actQ){S.actQ=false;doAction();}
   } else S.actQ=false;
 
   if(!walkable(S.px,S.py)){
-    // frog gets a grace period standing in water before taking damage
-    S.tideGrace=(S.tideGrace||0)+dt;
-    if(S.tideGrace>=curChar().tideBonus && S.invuln<=0){
-      damage('tide');floatText(S.px,S.py-24,'🌊 -1 ❤️','#8fd8ff');
+    if(curChar().waterFree){
+      // 개구리: 물에서 피해도 없고 밀려나지도 않는다 (물이 곧 활동 무대)
+      S.tideGrace=0;
+    } else {
+      S.tideGrace=(S.tideGrace||0)+dt;
+      if(S.tideGrace>=curChar().tideBonus && S.invuln<=0){
+        damage('tide');floatText(S.px,S.py-24,'🌊 -1 ❤️','#8fd8ff');
+      }
+      let gx=(MW*TS/2-S.px), gy=(MH*TS/2-S.py);
+      S.px+=Math.sign(gx)*110*dt; S.py+=Math.sign(gy)*110*dt;
     }
-    let gx=(MW*TS/2-S.px), gy=(MH*TS/2-S.py);
-    S.px+=Math.sign(gx)*110*dt; S.py+=Math.sign(gy)*110*dt;
   } else S.tideGrace=0;
 
   if(S.comboT>0){S.comboT-=dt;if(S.comboT<=0){S.combo=0;$('combo').style.opacity=0;$('combo').style.color='';}}
@@ -1018,6 +1029,11 @@ function walkable(px,py){
   const x=Math.floor(px/TS), y=Math.floor(py/TS);
   if(x<0||y<0||x>=MW||y>=MH)return false;
   return tileType(x,y)!==0 && !isFlooded(x,y);
+}
+// 맵 경계 안인지만 판정 (개구리 수영용)
+function inBounds(px,py){
+  const x=Math.floor(px/TS), y=Math.floor(py/TS);
+  return x>=0&&y>=0&&x<MW&&y<MH;
 }
 
 /* ---------- render ---------- */
@@ -1165,9 +1181,20 @@ function drawCat(){
   }
   // frog glow aura
   if(ch.key==='frog'){
+    const swimming = !walkable(S.px,S.py);
     ctx.globalAlpha=(blink?.45:1)*(0.25+0.15*Math.sin(S.t*4));
-    ctx.fillStyle='#6ee04c';
-    ctx.beginPath(); ctx.arc(cx,cy-bob,SZ*0.62,0,7); ctx.fill();
+    ctx.fillStyle= swimming ? '#8fd8ff' : '#6ee04c';
+    ctx.beginPath(); ctx.arc(cx,cy-bob,SZ*(swimming?0.72:0.62),0,7); ctx.fill();
+    // 헤엄칠 때 물결 파문
+    if(swimming){
+      ctx.globalAlpha=(blink?.45:1)*0.55;
+      ctx.strokeStyle='#cfeaff'; ctx.lineWidth=2;
+      for(let i=0;i<2;i++){
+        const ph=((S.t*1.6)+i*0.5)%1;
+        ctx.globalAlpha=(blink?.45:1)*0.5*(1-ph);
+        ctx.beginPath(); ctx.ellipse(cx,cy+10,10+ph*22,4+ph*8,0,0,7); ctx.stroke();
+      }
+    }
     ctx.globalAlpha=blink?.45:1;
   }
   const dx=cx-SZ/2, dy=cy-SZ*0.72-bob;
