@@ -143,6 +143,7 @@ function cmdSuccess(){
   if(golden)amt*=3;
   S.inv[def.give]+=amt;
   fxHarvest(r);                                        // 그래픽: 채집 연출
+  try{Meta.onHarvest(r);}catch(e){}                    // 기록: 황금·폭풍 채집 수 (도감용, 점수 무관)
   const ri=S.resources.indexOf(r); if(ri>=0)S.resources.splice(ri,1);
   const respawnDelay = hasBuild('fire') ? (2500+Math.random()*2500) : (5000+Math.random()*5000);
   setTimeout(()=>{if(S&&!S.over)spawnRes(r.type);},respawnDelay);
@@ -507,6 +508,7 @@ function endGame(cause){
   const col=grade==='S'?'#e5b93b':(cause==='death'||grade==='D'?'#5a6b7a':'#d84a3a');
   g.style.borderColor=col; g.style.color=col;
   $('result').style.display='flex'; g.classList.add('stamp');
+  try{Deco.onRunEnd(grade,cause);}catch(e){console.error(e);}   // 꾸미기: 진주·도감·우정도 정산 (점수 무관)
   setTimeout(()=>{SFX.stamp();shakeT=.3;$('gradeword').textContent=word;},950);
   if(grade==='S')playFireworks();
   $('sharebtn').onclick=()=>{

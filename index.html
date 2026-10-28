@@ -53,6 +53,7 @@
     <div class="overlay" id="title">
       <button id="cornerrank" class="pxbtn">🏆 랭킹</button>
       <button id="cornerhelp" class="pxbtn">❓ 점수 규칙</button>
+      <button id="decobtn" class="pxbtn"><span class="dlabel">🎨 꾸미기</span><span class="dmini">🎨</span><span class="pearlnum"><img class="pi" data-icon="pearl" alt="진주"><b id="titlepearls">0</b></span></button>
       <h1>삼분의숲</h1>
       <div class="sub">— 밀물이 오기 전에 —</div>
       <div class="howto">
@@ -118,12 +119,32 @@
       </div>
     </div>
 
+    <div id="decomodal">
+      <div id="decocard">
+        <button id="decoclose">✕</button>
+        <h3>🎨 캠프 꾸미기</h3>
+        <div id="decotop">
+          <span class="pearlbadge"><img class="pi" data-icon="pearl" alt="진주"><b id="decopearls">0</b></span>
+          <span id="decofriend"></span>
+        </div>
+        <div id="decotabs">
+          <button data-tab="camp" class="on">🏕️ 캠프</button>
+          <button data-tab="char">🐾 캐릭터</button>
+          <button data-tab="hat">🎩 모자</button>
+          <button data-tab="book">📖 도감</button>
+        </div>
+        <div id="decobody"></div>
+        <div id="decomsg"></div>
+      </div>
+    </div>
+
     <div class="overlay" id="result">
       <div id="resultcard">
         <div id="grade">?</div>
         <div id="resultscroll">
           <h2>🏝️ 캠프 결과</h2>
           <canvas id="snapshot"></canvas>
+          <div id="reward"></div>
           <div id="story"></div>
           <div id="stats"></div>
           <div id="gradeword"></div>
@@ -137,6 +158,7 @@
             <button class="btn small" id="againbtn">다시 하기</button>
             <button class="btn small" id="homebtn">처음으로</button>
             <button class="btn small" id="sharebtn">결과 복사</button>
+            <button class="btn small" id="decobtn2">🎨 꾸미기</button>
           </div>
           <div id="shareok"></div>
         </div>
@@ -155,12 +177,15 @@
 <script src="js/audio.js"></script>
 <script src="js/pixelart.js"></script>
 <script src="js/art.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/deco.js"></script>
 <script src="js/game.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/ground.js"></script>
 <script src="js/lighting.js"></script>
 <script src="js/weather.js"></script>
 <script src="js/char-anims.js"></script>
+<script src="js/hats.js"></script>
 <script src="js/charanim.js"></script>
 <script src="js/render.js"></script>
 <script src="js/ui.js"></script>

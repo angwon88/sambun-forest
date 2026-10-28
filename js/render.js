@@ -13,8 +13,9 @@ const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width
 const CHAR_CV = {};
 function prepCharCanvases() {
   for (const k of Object.keys(CHAR_IMGS)) {
-    const img = CHAR_IMGS[k];
-    if (!img || !img.complete || !img.naturalWidth) continue;
+    const base = CHAR_IMGS[k];
+    if (!base || !base.complete || !base.naturalWidth) continue;
+    const img = Deco.legacyImg(k) || base;                 // 꾸미기 색이 있으면 그 색으로
     const s = Math.round(48 * RS);
     const n = mkCanvas(s, s), g = n.getContext('2d');
     g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
@@ -256,7 +257,7 @@ function drawBuilding(c, b) {
     const ph = (RT * 0.7 + b.x * 0.2) % 1;
     c.beginPath(); c.ellipse(fx, fy - 6, 14 + ph * 6, 3 + ph * 2, 0, 0, Math.PI * 2); c.globalAlpha = 1 - ph; c.stroke(); c.globalAlpha = 1;
   }
-  if (b.type === 'fire' && !flooded && vr() < 0.18) FX.embers(fx, fy - 16, 1);
+  if (b.type === 'fire' && !flooded && vr() < 0.18) { const fl = ART.skin.fire.flame; FX.embers(fx, fy - 16, 1, fl && [PIX.css(fl[4]), PIX.css(fl[3])]); }
 }
 function drawNpc(c) {
   const o = S.otter, crow = curChar().key === 'dark', frames = crow ? ART.crow : ART.otter;
@@ -454,7 +455,8 @@ function collectLights() {
   for (const b of S.buildings) {
     const x = b.x * TS + 18, y = b.y * TS + 18;
     if (!S.demo && isFlooded(b.x, b.y)) continue;
-    if (b.type === 'fire') { const fl = 0.9 + 0.1 * Math.sin(RT * 13 + b.x) + 0.06 * Math.sin(RT * 29); L.push({ x, y: y + 2, r: 165 * fl, c: [255, 168, 78], i: 1.1 * fl, glow: 1 }); }
+    if (b.type === 'fire') { const fl = 0.9 + 0.1 * Math.sin(RT * 13 + b.x) + 0.06 * Math.sin(RT * 29); L.push({ x, y: y + 2, r: 165 * fl, c: ART.skin.fire.light || [255, 168, 78], i: 1.1 * fl, glow: 1 }); }
+    else if (b.type === 'palm' && ART.skin.palm.pattern === 'lights') L.push({ x: x + 4, y: y - 30, r: 52, c: [255, 214, 150], i: 0.5 + 0.12 * Math.sin(RT * 4.4 + b.x), glow: 0.5 });
     else if (b.type === 'tent') L.push({ x, y: y + 6, r: 62, c: [255, 196, 120], i: 0.6, glow: 0.35 });
     else if (b.type === 'shellart') L.push({ x, y: y - 22, r: 46, c: [205, 225, 255], i: 0.55, glow: 0.45 });
     else if (b.type === 'flag') L.push({ x: x - 8, y: y - 26, r: 26, c: [255, 220, 120], i: 0.35 });

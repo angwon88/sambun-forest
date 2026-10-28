@@ -132,9 +132,9 @@ function picBush(v, golden) {
   if (golden) sparkles(p, [[6, 8, 1], [28, 12, 0]]);
   return p;
 }
-function picShell(v, golden) {
+function picShell(v, golden, rmp) {
   const p = PIX.pic(20, 16);
-  const sh = golden ? PAL.shellG : PAL.shell;
+  const sh = rmp || (golden ? PAL.shellG : PAL.shell);
   if (v === 0) {
     // 가리비: 아래 경첩에서 퍼지는 부채꼴 + 방사형 골
     const hx = 10, hy = 13.5;
@@ -167,16 +167,40 @@ function picShell(v, golden) {
   return p;
 }
 
-/* ---------------- 건물 ---------------- */
-function picTent() {
+/* ---------------- 건물 ----------------
+   건물 그림은 '스킨'(색 ramp·무늬)을 인자로 받는다. 인자가 없으면 기본 그림.
+   스킨 목록과 가격은 js/deco.js의 SKINS에 있다. */
+const SKIN0 = {
+  tent: { cloth: PAL.red, band: PAL.cream, pennant: '#ffd64a' },
+  fire: { flame: PAL.fire, light: [255, 168, 78] },
+  fence: { wood: PAL.plank },
+  flower: { cols: PAL.flower, box: PAL.plank },
+  palm: { leaf: PAL.leaf },
+  shellart: { shell: PAL.shell },
+  flag: { cloth: ['#ffe36b', '#ffd23f', '#e9b52a'], emb: ['#e9493e', '#c13530'], emblem: 'star' },
+};
+const skinOf = (key, sk) => sk ? Object.assign({}, SKIN0[key], sk) : SKIN0[key];
+// 깃발 문양 (X 주색 · o 눈/보석 · c 밝은 부분), 가운데 기준으로 찍는다
+const EMBLEM = {
+  heart: ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'],
+  skull: ['.XXXXX.', 'XXXXXXX', 'XooXooX', 'XXXXXXX', '.XX.XX.', '.XXXXX.', '.X.X.X.'],
+  wave: ['.XX..XX..', 'X..XX..XX', '.........', '.XX..XX..', 'X..XX..XX'],
+  otter: ['.XX...XX.', 'XXXXXXXXX', 'XXoXXXoXX', 'XXXcocXXX', '.XcccccX.', '..XXXXX..'],
+  crown: ['X...X...X', 'XX.XXX.XX', 'XXXXXXXXX', 'XoXXoXXoX', 'XXXXXXXXX'],
+};
+function picTent(sk0) {
+  const sk = skinOf('tent', sk0), C = sk.cloth, B = sk.band;
   const p = PIX.pic(38, 36);
   const ax = 19, top = 5, bot = 32;
   // 줄·말뚝
   p.line(6, 22, 1, 32, PAL.plank[2]); p.line(32, 22, 37, 32, PAL.plank[1]);
   p.rect(0, 31, 2, 3, PAL.plank[3]); p.rect(36, 31, 2, 3, PAL.plank[2]);
-  // 왼쪽 면(밝음) / 오른쪽 면(그늘) — 빨간 천 + 아래쪽 크림 띠
+  // 왼쪽 면(밝음) / 오른쪽 면(그늘) — 천 + 아래쪽 띠
   const face = (lit) => (x, y) => {
-    const band = y >= bot - 4, r = band ? PAL.cream : PAL.red;
+    const band = y >= bot - 4;
+    let r = band ? B : C;
+    // 줄무늬: 꼭대기에서 퍼지는 세로 줄
+    if (!band && sk.pattern === 'stripe' && Math.floor((x + 0.5 - ax) / Math.max(1, y - top) * 6 + 20) % 2 === 0) r = sk.stripe || B;
     let t = lit ? 0.78 - (y - top) / (bot - top) * 0.22 - (ax - x) * 0.004 : 0.4 - (y - top) / (bot - top) * 0.16;
     if (band) t = lit ? 0.62 : 0.3;
     if (!band && (y - top) % 7 === 6) t -= 0.12;   // 천 주름
@@ -185,21 +209,30 @@ function picTent() {
   };
   p.poly([[ax, top], [3, bot], [ax, bot]], face(true));
   p.poly([[ax, top], [ax, bot], [35, bot]], face(false));
+  // 무늬: 별 / 발자국
+  if (sk.pattern === 'stars') for (const [x, y, big] of [[13, 21, 1], [16, 12, 0], [9, 26, 0], [25, 16, 1], [29, 25, 0], [22, 11, 0], [31, 21, 0]]) {
+    p.set(x, y, '#fffbe0');
+    if (big) { p.set(x - 1, y, '#ffe683'); p.set(x + 1, y, '#ffe683'); p.set(x, y - 1, '#ffe683'); p.set(x, y + 1, '#ffe683'); }
+  }
+  if (sk.pattern === 'paws') for (const [x, y] of [[12, 21], [27, 20]]) {
+    const c = B[3]; p.rect(x, y + 2, 3, 2, c); p.set(x - 1, y + 1, c); p.set(x + 1, y, c); p.set(x + 3, y + 1, c);
+  }
   // 입구 (어두운 삼각형) + 젖힌 천
   p.poly([[ax, 13], [ax - 6, bot], [ax + 6, bot]], (x, y) => y > 27 ? '#2a1712' : '#3a2018');
-  p.poly([[ax, 13], [ax - 6, bot], [ax - 9, bot], [ax - 2, 15]], PAL.cream[3]);
-  p.poly([[ax, 13], [ax + 6, bot], [ax + 9, bot], [ax + 2, 15]], PAL.cream[1]);
-  p.line(ax - 2, 16, ax - 7, bot - 1, PAL.cream[2]);
+  p.poly([[ax, 13], [ax - 6, bot], [ax - 9, bot], [ax - 2, 15]], B[3]);
+  p.poly([[ax, 13], [ax + 6, bot], [ax + 9, bot], [ax + 2, 15]], B[1]);
+  p.line(ax - 2, 16, ax - 7, bot - 1, B[2]);
   // 바닥 테두리, 꼭대기 기둥과 작은 깃발
-  p.rect(3, bot, 33, 1, PAL.red[1]);
+  p.rect(3, bot, 33, 1, C[1]);
   p.rect(ax, 1, 1, 5, PAL.plank[2]); p.set(ax, 0, PAL.gold[4]);
-  p.poly([[ax + 1, 1], [ax + 6, 2.5], [ax + 1, 4]], '#ffd64a');
+  p.poly([[ax + 1, 1], [ax + 6, 2.5], [ax + 1, 4]], sk.pennant);
   // 지붕선 하이라이트
-  p.line(ax - 1, top + 1, 4, bot - 1, (x, y) => PAL.cream[4]);
+  p.line(ax - 1, top + 1, 4, bot - 1, (x, y) => B[4]);
   p.selout(0.45, 0.32);
   return p;
 }
-function picFire(f) {
+function picFire(f, sk0) {
+  const sk = skinOf('fire', sk0), FL = sk.flame;
   const p = PIX.pic(34, 38);
   const cx = 17, gy = 32;
   // 뒤쪽 돌
@@ -220,19 +253,20 @@ function picFire(f) {
     const tongue = Math.sin((x - cx) * 1.3 + ph * 2) * 0.12;
     let I = 1 - dx / (w + 0.01) * 0.8 - v * 0.55 + tongue + 0.15;
     if (v > 0.6 && dx > w * 0.5 && PIX.hash(x, y, f) > 0.6) continue;   // 혀끝 갈라짐
-    const n = PAL.fire.length, fl = PIX.clamp(I, 0, 0.999) * (n - 1), b = Math.floor(fl);
-    p.set(x, y, PAL.fire[PIX.clamp(b + ((fl - b) > PIX.bayer(x, y) ? 1 : 0), 0, n - 1)]);
+    const n = FL.length, fl = PIX.clamp(I, 0, 0.999) * (n - 1), b = Math.floor(fl);
+    p.set(x, y, FL[PIX.clamp(b + ((fl - b) > PIX.bayer(x, y) ? 1 : 0), 0, n - 1)]);
   }
   // 불티
-  for (let i = 0; i < 3; i++) { const x = cx - 6 + Math.floor(PIX.hash(i, f, 5) * 12), y = gy - H - 2 - Math.floor(PIX.hash(i, f, 9) * 6); p.set(x, y, i % 2 ? PAL.fire[4] : PAL.fire[3]); }
+  for (let i = 0; i < 3; i++) { const x = cx - 6 + Math.floor(PIX.hash(i, f, 5) * 12), y = gy - H - 2 - Math.floor(PIX.hash(i, f, 9) * 6); p.set(x, y, i % 2 ? FL[4] : FL[3]); }
   // 앞쪽 돌
   stones.slice(6).forEach(drawStone);
   p.selout(0.5, 0.35);
   return p;
 }
-function picFence() {
+function picFence(sk0) {
+  const sk = skinOf('fence', sk0);
   const p = PIX.pic(38, 30);
-  const pk = PAL.plank;
+  const pk = sk.wood;
   const rail = (y) => { for (let x = 1; x < 37; x++) { p.set(x, y, pk[3]); p.set(x, y + 1, pk[2]); p.set(x, y + 2, pk[1]); } };
   rail(11); rail(19);
   for (let i = 0; i < 5; i++) {
@@ -240,25 +274,30 @@ function picFence() {
     p.poly([[x0, h0 + 3], [x0 + 2.5, h0], [x0 + 5, h0 + 3], [x0 + 5, 27], [x0, 27]], (x, y) => {
       const t = x - x0; return t === 0 ? pk[5] : t === 1 ? pk[4] : t >= 4 ? pk[2] : pk[3];
     });
-    p.set(x0 + 2, h0 + 6, pk[1]); p.set(x0 + 2, h0 + 13, pk[1]);   // 못
+    if (sk.pattern === 'bamboo') {                                   // 대나무 마디
+      for (let y = h0 + 7; y < 26; y += 6) { for (let x = x0; x < x0 + 5; x++) p.set(x, y, pk[1]); p.set(x0 + 1, y - 1, pk[5]); }
+    } else {
+      p.set(x0 + 2, h0 + 6, pk[1]); p.set(x0 + 2, h0 + 13, pk[1]);   // 못
+    }
     p.set(x0 + 1, 26, pk[1]); p.set(x0 + 3, 26, pk[1]);
   }
   p.selout(0.45, 0.3);
   return p;
 }
-function picFlower(f) {
+function picFlower(f, sk0) {
+  const sk = skinOf('flower', sk0);
   const p = PIX.pic(36, 30);
-  const pk = PAL.plank;
+  const pk = sk.box;
   // 꽃 (상자 뒤에서 솟음)
   const FL = [[6, 9, 0], [11, 5, 1], [16, 8, 2], [21, 4, 3], [26, 8, 4], [30, 6, 0], [13, 11, 5], [24, 12, 1]];
   for (const [x, y, ci] of FL) {
     const sw = f ? (x % 2 ? 1 : 0) : (x % 2 ? 0 : 1);
     p.line(x, y + 2, x + sw, 17, PAL.leaf[3]);
     p.set(x + sw - 1, 13, PAL.leaf[4]); p.set(x + sw + 1, 12, PAL.leaf[3]);
-    const c = PIX.hex(PAL.flower[ci]), hx = x + sw * (y < 8 ? 1 : 0);
+    const c = PIX.hex(sk.cols[ci]), hx = x + sw * (y < 8 ? 1 : 0);
     p.set(hx - 1, y, c); p.set(hx + 1, y, c); p.set(hx, y - 1, c); p.set(hx, y + 1, c);
     p.set(hx - 1, y - 1, PIX.darken(c, 0.85)); p.set(hx + 1, y + 1, PIX.darken(c, 0.75));
-    p.set(hx, y, ci === 0 ? '#ff9a3c' : '#ffe680');
+    p.set(hx, y, sk.center || (ci === 0 ? '#ff9a3c' : '#ffe680'));
   }
   // 흙
   p.rect(3, 15, 30, 3, '#4a2e1e'); for (let x = 4; x < 32; x += 3) p.set(x, 15, '#6b4430');
@@ -273,7 +312,8 @@ function picFlower(f) {
   p.selout(0.45, 0.3);
   return p;
 }
-function picPalm(f) {
+function picPalm(f, sk0) {
+  const sk = skinOf('palm', sk0), LF = sk.leaf;
   const p = PIX.pic(44, 60);
   const base = [20, 57], top = [25, 19];
   // 줄기: 휘어진 마디
@@ -303,41 +343,54 @@ function picPalm(f) {
       const tm = Math.hypot(tx, ty) || 1, nx = -ty / tm, ny = tx / tm;
       const Lf = 3.4 * Math.sin(Math.PI * Math.min(1, t * 1.15)) + 0.6;
       for (let k = 0.5; k <= Lf; k += 0.5) {
-        p.set(Math.round(x + nx * k * 0.8), Math.round(y + ny * k * 0.8 + k * 0.45), PAL.leaf[(k > Lf - 1 ? 3 : 4) - dark]);
-        p.set(Math.round(x - nx * k * 0.8), Math.round(y - ny * k * 0.8 + k * 0.6), PAL.leaf[(k > Lf - 1 ? 2 : 3) - dark]);
+        p.set(Math.round(x + nx * k * 0.8), Math.round(y + ny * k * 0.8 + k * 0.45), LF[(k > Lf - 1 ? 3 : 4) - dark]);
+        p.set(Math.round(x - nx * k * 0.8), Math.round(y - ny * k * 0.8 + k * 0.6), LF[(k > Lf - 1 ? 2 : 3) - dark]);
       }
-      p.set(Math.round(x), Math.round(y), PAL.leaf[t < 0.5 ? 6 - dark : 5 - dark]);
+      p.set(Math.round(x), Math.round(y), LF[t < 0.5 ? 6 - dark : 5 - dark]);
     }
   }
-  p.blob(cx, cy, 3.2, 2.4, PAL.leaf, { bias: 0.12 });
+  p.blob(cx, cy, 3.2, 2.4, LF, { bias: 0.12 });
+  // 꼬마전구: 잎 사이로 늘어진 줄 + 프레임마다 번갈아 깜빡임
+  if (sk.pattern === 'lights') {
+    const bulbs = [[12, 25], [16, 22], [20, 20], [25, 21], [30, 20], [34, 22], [38, 25]];
+    const BC = ['#ff5a5a', '#ffd84a', '#5ad8ff', '#8aff6a', '#ff8ad8'];
+    for (let i = 0; i + 1 < bulbs.length; i++) p.line(bulbs[i][0], bulbs[i][1] - 1, bulbs[i + 1][0], bulbs[i + 1][1] - 1, '#2a2a22');
+    bulbs.forEach(([x, y], i) => {
+      const c = BC[i % BC.length], on = (i + f) % 2 === 0;
+      p.rect(x, y, 2, 2, on ? c : PIX.darken(c, 0.6));
+      if (on) p.set(x, y, '#ffffff');
+    });
+  }
   p.selout(0.45, 0.3);
   return p;
 }
-function picShellTower() {
+function picShellTower(sk0) {
+  const sk = skinOf('shellart', sk0), SH = sk.shell;
   const p = PIX.pic(32, 46);
-  const sand = PIX.ramp('#7d5f3a', '#9c7c4c', '#bc9a62', '#d6b87c', '#ead49c', '#f6e8c0');
+  const sand = sk.sand || PIX.ramp('#7d5f3a', '#9c7c4c', '#bc9a62', '#d6b87c', '#ead49c', '#f6e8c0');
   // 쌓은 둥근 돌 3단
   p.blob(16, 39, 12, 5.5, sand, { dither: 0.4, ao: 0.3, flat: 0.7 });
   p.blob(16, 31, 9, 4.6, sand, { dither: 0.4, ao: 0.3, flat: 0.7, bias: 0.04 });
   p.blob(16, 24.5, 6.6, 3.8, sand, { dither: 0.4, ao: 0.3, flat: 0.7, bias: 0.07 });
   // 돌에 붙인 가리비
-  const sc = picShell(0, false);
+  const sc = picShell(0, false, SH);
   const putShell = (dx, dy) => { for (let y = 0; y < 16; y++) for (let x = 0; x < 20; x++) { const c = sc.get(x, y); if (PIX.alphaOf(c) && y > 3) p.set(dx + Math.floor(x * 0.6), dy + Math.floor(y * 0.6), c); } };
   putShell(4, 34); putShell(18, 35); putShell(10, 26);
   // 꼭대기: 위로 솟은 큰 소라
-  p.blob(16, 17.5, 5, 3.6, PAL.shell, { dither: 0.4, ao: 0.25 });
-  p.blob(16, 13, 3.8, 3, PAL.shell, { dither: 0.4, bias: 0.06 });
-  p.blob(16, 9.2, 2.7, 2.3, PAL.shell, { dither: 0.4, bias: 0.1 });
-  p.blob(16, 6.2, 1.7, 1.6, PAL.shell, { dither: 0.4, bias: 0.14 });
-  p.line(11, 17, 20, 15, PAL.shell[2]); p.line(13, 13, 19, 11, PAL.shell[2]); p.line(14, 9, 18, 8, PAL.shell[3]);
-  p.set(14, 14, PAL.shell[5]); p.set(14, 10, PAL.shell[5]);
+  p.blob(16, 17.5, 5, 3.6, SH, { dither: 0.4, ao: 0.25 });
+  p.blob(16, 13, 3.8, 3, SH, { dither: 0.4, bias: 0.06 });
+  p.blob(16, 9.2, 2.7, 2.3, SH, { dither: 0.4, bias: 0.1 });
+  p.blob(16, 6.2, 1.7, 1.6, SH, { dither: 0.4, bias: 0.14 });
+  p.line(11, 17, 20, 15, SH[2]); p.line(13, 13, 19, 11, SH[2]); p.line(14, 9, 18, 8, SH[3]);
+  p.set(14, 14, SH[5]); p.set(14, 10, SH[5]);
   // 진주
-  p.blob(16, 3, 2.4, 2.4, PIX.ramp('#9aa8c8', '#cfd8ee', '#f2f6ff', '#ffffff'), { dither: 0.2, bias: 0.1 });
+  p.blob(16, 3, 2.4, 2.4, sk.pearl || PIX.ramp('#9aa8c8', '#cfd8ee', '#f2f6ff', '#ffffff'), { dither: 0.2, bias: 0.1 });
   p.set(15, 2, '#ffffff');
   p.selout(0.45, 0.32);
   return p;
 }
-function picFlag(f) {
+function picFlag(f, sk0) {
+  const sk = skinOf('flag', sk0), CL = sk.cloth, EM = sk.emblem === 'star' ? null : EMBLEM[sk.emblem];
   const p = PIX.pic(36, 50);
   // 받침 돌
   p.blob(10, 46, 6, 3, PAL.stone, { dither: 0.3, ao: 0.3 });
@@ -351,10 +404,17 @@ function picFlag(f) {
     const lit = Math.cos(ph);
     for (let y = 0; y < fh; y++) {
       const yy = Math.round(fy + y + off);
-      let c = PIX.hex(lit > 0.3 ? '#ffe36b' : lit > -0.3 ? '#ffd23f' : '#e9b52a');
-      // 엠블럼: 빨간 별 모양 (가운데)
+      let c = PIX.hex(lit > 0.3 ? CL[0] : lit > -0.3 ? CL[1] : CL[2]);
+      // 엠블럼 (가운데): 기본은 빨간 별, 스킨이면 문양 그림
       const ex = x - 9, ey = y - 6;
-      if ((Math.abs(ex) + Math.abs(ey) <= 3) || (ey === 0 && Math.abs(ex) <= 4) || (ex === 0 && Math.abs(ey) <= 4)) c = PIX.hex(lit > 0 ? '#e9493e' : '#c13530');
+      if (!EM) {
+        if ((Math.abs(ex) + Math.abs(ey) <= 3) || (ey === 0 && Math.abs(ex) <= 4) || (ex === 0 && Math.abs(ey) <= 4)) c = PIX.hex(lit > 0 ? sk.emb[0] : sk.emb[1]);
+      } else {
+        const my = ey + (EM.length >> 1), mx = ex + (EM[0].length >> 1), ch = my >= 0 && my < EM.length ? EM[my][mx] : undefined;
+        if (ch === 'X') c = PIX.hex(lit > 0 ? sk.emb[0] : sk.emb[1]);
+        else if (ch === 'o') c = PIX.hex(sk.emb2 || '#2a1712');
+        else if (ch === 'c') c = PIX.hex(sk.emb3 || '#fdeedb');
+      }
       if (y === 0) c = PIX.lighten(c, 0.25);
       if (y === fh - 1) c = PIX.darken(c, 0.8);
       p.set(11 + x, yy, c);
@@ -509,63 +569,80 @@ function picIcon(kind) {
       p.blob(8, 6, 6, 3.6, PIX.ramp('#6a7a98', '#9aaac8', '#cfd8ea', '#eef3ff'), { bias: 0.1 });
       for (const [x, y] of [[4, 11], [8, 12], [12, 11], [6, 14], [10, 14]]) p.rect(x, y, 1, 2, '#8fd8ff');
       p.selout(0.45, 0.4); break;
+    case 'pearl':                                   // 꾸미기 화폐: 진주
+      p.blob(8, 8.5, 5.6, 5.6, PIX.ramp('#7a86a8', '#a8b4d0', '#d2dbee', '#eef2fb', '#ffffff'), { dither: 0.35, bias: 0.04 });
+      p.set(6, 6, '#ffffff'); p.set(5, 7, '#ffffff'); p.set(10, 12, '#ffd6e6'); p.set(11, 11, '#ffe6f0');
+      p.outline('#2c3550'); break;                  // 밝은 종이 위에서도 보이게 진한 테두리
   }
   return p;
 }
 
 /* ---------------- 건설바용 작은 건물 아이콘 (26x26) ---------------- */
-function picBuildIcon(key) {
-  const p = PIX.pic(26, 26);
+function picBuildIcon(key, sk0) {
+  const p = PIX.pic(26, 26), sk = skinOf(key, sk0);
   switch (key) {
-    case 'tent':
-      p.poly([[13, 3], [2, 23], [13, 23]], (x, y) => y > 19 ? PAL.cream[3] : PAL.red[3 + ((x + y) % 5 === 0 ? 1 : 0)]);
-      p.poly([[13, 3], [13, 23], [24, 23]], (x, y) => y > 19 ? PAL.cream[1] : PAL.red[1]);
+    case 'tent': {
+      const C = sk.cloth, B = sk.band;
+      const cl = (x, y, i) => (sk.pattern === 'stripe' && Math.floor((x + 0.5 - 13) / Math.max(1, y - 3) * 6 + 20) % 2 === 0) ? (sk.stripe || B)[Math.min(i, (sk.stripe || B).length - 1)] : C[i];
+      p.poly([[13, 3], [2, 23], [13, 23]], (x, y) => y > 19 ? B[3] : cl(x, y, 3 + ((x + y) % 5 === 0 ? 1 : 0)));
+      p.poly([[13, 3], [13, 23], [24, 23]], (x, y) => y > 19 ? B[1] : cl(x, y, 1));
+      if (sk.pattern === 'stars') { p.set(8, 15, '#fffbe0'); p.set(17, 12, '#fffbe0'); p.set(20, 18, '#ffe683'); }
+      if (sk.pattern === 'paws') { p.rect(6, 15, 2, 2, B[3]); p.rect(18, 15, 2, 2, B[3]); }
       p.poly([[13, 9], [9, 23], [17, 23]], '#3a2018');
-      p.poly([[13, 9], [9, 23], [7, 23]], PAL.cream[3]);
-      p.rect(13, 0, 1, 4, PAL.plank[2]); p.poly([[14, 0], [18, 1.5], [14, 3]], '#ffd64a');
+      p.poly([[13, 9], [9, 23], [7, 23]], B[3]);
+      p.rect(13, 0, 1, 4, PAL.plank[2]); p.poly([[14, 0], [18, 1.5], [14, 3]], sk.pennant);
       break;
+    }
     case 'fire': {
+      const FL = sk.flame;
       p.blob(13, 21, 9, 3, PAL.stone, { dither: 0.3, ao: 0.3 });
       p.line(6, 21, 19, 17, PAL.plank[2]); p.line(6, 17, 19, 21, PAL.plank[3]);
       for (let y = 4; y < 20; y++) for (let x = 6; x < 21; x++) {
         const v = (20 - y) / 16, w = 6 * Math.pow(1 - v, 0.7), dx = Math.abs(x + 0.5 - 13 - Math.sin(v * 6) * v * 1.5);
         if (dx > w) continue;
-        const I = 1 - dx / (w + 0.01) * 0.75 - v * 0.5 + 0.2, n = PAL.fire.length, f = PIX.clamp(I, 0, 0.999) * (n - 1), b = Math.floor(f);
-        p.set(x, y, PAL.fire[PIX.clamp(b + ((f - b) > PIX.bayer(x, y) ? 1 : 0), 0, n - 1)]);
+        const I = 1 - dx / (w + 0.01) * 0.75 - v * 0.5 + 0.2, n = FL.length, f = PIX.clamp(I, 0, 0.999) * (n - 1), b = Math.floor(f);
+        p.set(x, y, FL[PIX.clamp(b + ((f - b) > PIX.bayer(x, y) ? 1 : 0), 0, n - 1)]);
       }
       break;
     }
-    case 'fence':
-      for (let x = 1; x < 25; x++) { p.set(x, 9, PAL.plank[3]); p.set(x, 10, PAL.plank[2]); p.set(x, 16, PAL.plank[3]); p.set(x, 17, PAL.plank[2]); }
-      for (let i = 0; i < 4; i++) { const x0 = 2 + i * 6; p.poly([[x0, 6], [x0 + 2, 3], [x0 + 4, 6], [x0 + 4, 23], [x0, 23]], (x) => x === x0 ? PAL.plank[5] : x >= x0 + 3 ? PAL.plank[2] : PAL.plank[4]); }
+    case 'fence': {
+      const W = sk.wood;
+      for (let x = 1; x < 25; x++) { p.set(x, 9, W[3]); p.set(x, 10, W[2]); p.set(x, 16, W[3]); p.set(x, 17, W[2]); }
+      for (let i = 0; i < 4; i++) { const x0 = 2 + i * 6; p.poly([[x0, 6], [x0 + 2, 3], [x0 + 4, 6], [x0 + 4, 23], [x0, 23]], (x) => x === x0 ? W[5] : x >= x0 + 3 ? W[2] : W[4]); if (sk.pattern === 'bamboo') { p.rect(x0, 13, 4, 1, W[1]); p.rect(x0, 20, 4, 1, W[1]); } }
       break;
+    }
     case 'flower':
       for (const [x, y, c] of [[6, 7, 0], [12, 4, 1], [18, 7, 3], [9, 10, 2], [16, 10, 4]]) {
         p.line(x, y + 2, x, 14, PAL.leaf[3]);
-        const col = PAL.flower[c]; p.set(x - 1, y, col); p.set(x + 1, y, col); p.set(x, y - 1, col); p.set(x, y + 1, col); p.set(x, y, '#ffe680');
+        const col = sk.cols[c]; p.set(x - 1, y, col); p.set(x + 1, y, col); p.set(x, y - 1, col); p.set(x, y + 1, col); p.set(x, y, sk.center || '#ffe680');
       }
       p.rect(2, 13, 22, 2, '#4a2e1e');
-      for (let y = 15; y < 23; y++) for (let x = 2; x < 24; x++) p.set(x, y, y === 15 ? PAL.plank[5] : (y - 16) % 3 === 2 ? PAL.plank[1] : PAL.plank[3]);
+      for (let y = 15; y < 23; y++) for (let x = 2; x < 24; x++) p.set(x, y, y === 15 ? sk.box[5] : (y - 16) % 3 === 2 ? sk.box[1] : sk.box[3]);
       break;
     case 'palm':
       for (let i = 0; i <= 16; i++) { const t = i / 16, x = 11 + t * 3 + Math.sin(t * 3) * 1.5, y = 24 - t * 15; for (let d = -1; d <= 1; d++) p.set(Math.round(x + d), Math.round(y), PAL.bark[d < 0 ? 4 : d > 0 ? 2 : 3]); if (i % 3 === 0) p.set(Math.round(x), Math.round(y), PAL.bark[1]); }
       for (const [a, len] of [[-2.7, 10], [-0.45, 10], [-1.9, 8], [-1.15, 8], [-3.3, 8], [0.2, 8]]) {
-        for (let s = 0.5; s <= len; s += 0.5) { const t = s / len, x = 14 + Math.cos(a) * s, y = 8 + Math.sin(a) * s * 0.7 + t * t * 6; p.set(Math.round(x), Math.round(y), PAL.leaf[5]); p.set(Math.round(x), Math.round(y) + 1, PAL.leaf[3]); }
+        for (let s = 0.5; s <= len; s += 0.5) { const t = s / len, x = 14 + Math.cos(a) * s, y = 8 + Math.sin(a) * s * 0.7 + t * t * 6; p.set(Math.round(x), Math.round(y), sk.leaf[5]); p.set(Math.round(x), Math.round(y) + 1, sk.leaf[3]); }
       }
       p.blob(15, 10, 1.6, 1.6, PIX.ramp('#3a2414', '#7e5430', '#a07040')); p.blob(12, 10, 1.6, 1.6, PIX.ramp('#3a2414', '#7e5430', '#a07040'));
+      if (sk.pattern === 'lights') for (const [x, y, c] of [[6, 12, '#ff5a5a'], [10, 10, '#ffd84a'], [18, 10, '#5ad8ff'], [21, 12, '#8aff6a']]) p.set(x, y, c);
       break;
-    case 'shellart':
-      p.blob(13, 21, 9, 3.6, PIX.ramp('#9c7c4c', '#bc9a62', '#d6b87c', '#ead49c'), { dither: 0.3, flat: 0.7, ao: 0.3 });
-      p.blob(13, 15.5, 6, 3, PIX.ramp('#9c7c4c', '#bc9a62', '#d6b87c', '#ead49c'), { dither: 0.3, flat: 0.7, ao: 0.3, bias: 0.05 });
-      p.blob(13, 10, 3.6, 2.8, PAL.shell, { dither: 0.3 }); p.blob(13, 6, 2.4, 2, PAL.shell, { dither: 0.3, bias: 0.08 }); p.blob(13, 3, 1.4, 1.4, PAL.shell, { bias: 0.12 });
-      p.set(8, 20, PAL.shell[4]); p.set(9, 20, PAL.shell[3]); p.set(17, 21, PAL.shell[4]); p.set(18, 21, PAL.shell[3]);
+    case 'shellart': {
+      const sd = sk.sand ? sk.sand.slice(1, 5) : PIX.ramp('#9c7c4c', '#bc9a62', '#d6b87c', '#ead49c'), SH = sk.shell;
+      p.blob(13, 21, 9, 3.6, sd, { dither: 0.3, flat: 0.7, ao: 0.3 });
+      p.blob(13, 15.5, 6, 3, sd, { dither: 0.3, flat: 0.7, ao: 0.3, bias: 0.05 });
+      p.blob(13, 10, 3.6, 2.8, SH, { dither: 0.3 }); p.blob(13, 6, 2.4, 2, SH, { dither: 0.3, bias: 0.08 }); p.blob(13, 3, 1.4, 1.4, SH, { bias: 0.12 });
+      p.set(8, 20, SH[4]); p.set(9, 20, SH[3]); p.set(17, 21, SH[4]); p.set(18, 21, SH[3]);
       break;
-    case 'flag':
+    }
+    case 'flag': {
+      const CL = sk.cloth;
       p.blob(7, 23, 4, 2, PAL.stone, { dither: 0.3 });
       for (let y = 2; y < 23; y++) { p.set(6, y, PAL.plank[4]); p.set(7, y, PAL.plank[2]); }
       p.blob(6.5, 2, 1.5, 1.5, PAL.gold, { bias: 0.1 });
-      for (let x = 0; x < 15; x++) { const off = Math.round(Math.sin(x * 0.45) * 1); for (let y = 0; y < 9; y++) { const ex = x - 6, ey = y - 4; const red = (Math.abs(ex) + Math.abs(ey) <= 2); p.set(8 + x, 4 + y + off, red ? '#e9493e' : (y === 0 ? '#ffe36b' : y === 8 ? '#e9b52a' : '#ffd23f')); } }
+      for (let x = 0; x < 15; x++) { const off = Math.round(Math.sin(x * 0.45) * 1); for (let y = 0; y < 9; y++) { const ex = x - 6, ey = y - 4; const red = (Math.abs(ex) + Math.abs(ey) <= 2); p.set(8 + x, 4 + y + off, red ? sk.emb[0] : (y === 0 ? CL[0] : y === 8 ? CL[2] : CL[1])); } }
       break;
+    }
   }
   p.selout(0.45, 0.32);
   return p;
@@ -603,6 +680,27 @@ function picParticle(kind, v = 0) {
 function mkSprite(p, ax, ay) {
   return { c: p.canvas(), w: p.w, h: p.h, ax, ay, hl: p.silhouetteOutline('#ffffff').canvas(), pic: p };
 }
+// 건물 한 종류의 프레임들 (스킨 sk로)
+const BUILD_KEYS = ['tent', 'fire', 'fence', 'flower', 'palm', 'shellart', 'flag'];
+function buildingFrames(key, sk) {
+  switch (key) {
+    case 'tent': return [mkSprite(picTent(sk), 19, 33)];
+    case 'fire': return [0, 1, 2, 3].map(f => mkSprite(picFire(f, sk), 17, 34));
+    case 'fence': return [mkSprite(picFence(sk), 19, 28)];
+    case 'flower': return [0, 1].map(f => mkSprite(picFlower(f, sk), 18, 27));
+    case 'palm': return [0, 1, 2, 3].map(f => mkSprite(picPalm(f, sk), 20, 58));
+    case 'shellart': return [mkSprite(picShellTower(sk), 16, 44)];
+    case 'flag': return [0, 1, 2, 3].map(f => mkSprite(picFlag(f, sk), 10, 48));
+  }
+}
+// 장착 스킨이 바뀌면 그 건물만 다시 그린다 (건설바 아이콘 포함)
+function refreshBuildingArt(key) {
+  const sk = typeof Deco !== 'undefined' ? Deco.artSkin(key) : undefined;
+  (ART.skin || (ART.skin = {}))[key] = sk || {};
+  ART.build[key] = buildingFrames(key, sk);
+  ART.bicon[key] = picBuildIcon(key, sk).canvas();
+  delete ICON_URL['bicon:' + key];
+}
 function buildArt() {
   ART.res = {
     tree: [0, 1, 2].map(v => ({ n: mkSprite(picTree(v, false), 18, 45), g: mkSprite(picTree(v, true), 18, 45) })),
@@ -610,24 +708,16 @@ function buildArt() {
     fruit: [0, 1].map(v => ({ n: mkSprite(picBush(v, false), 17, 27), g: mkSprite(picBush(v, true), 17, 27) })),
     shell: [0, 1].map(v => ({ n: mkSprite(picShell(v, false), 10, 14), g: mkSprite(picShell(v, true), 10, 14) })),
   };
-  // 건물: 프레임 배열 (애니메이션 없는 건물은 1프레임)
-  ART.build = {
-    tent: [mkSprite(picTent(), 19, 33)],
-    fire: [0, 1, 2, 3].map(f => mkSprite(picFire(f), 17, 34)),
-    fence: [mkSprite(picFence(), 19, 28)],
-    flower: [0, 1].map(f => mkSprite(picFlower(f), 18, 27)),
-    palm: [0, 1, 2, 3].map(f => mkSprite(picPalm(f), 20, 58)),
-    shellart: [mkSprite(picShellTower(), 16, 44)],
-    flag: [0, 1, 2, 3].map(f => mkSprite(picFlag(f), 10, 48)),
-  };
+  // 건물: 프레임 배열 (애니메이션 없는 건물은 1프레임). 장착한 스킨으로 그린다
+  ART.build = {}; ART.bicon = {};
+  for (const k of BUILD_KEYS) refreshBuildingArt(k);
   ART.otter = [0, 1, 2].map(m => mkSprite(picOtter(m), 16, 30));
   ART.crow = [0, 1].map(m => mkSprite(picCrow(m), 16, 30));
   ART.ghost = [0, 1, 2].map(f => mkSprite(picGhost(f), 16, 22));
   ART.icon = {};
-  for (const k of ['wood', 'stone', 'fruit', 'shell', 'heart', 'heartEmpty', 'heartGold', 'star', 'shield', 'clock', 'dash', 'dice', 'rain', 'sun', 'moon']) {
+  for (const k of ['wood', 'stone', 'fruit', 'shell', 'heart', 'heartEmpty', 'heartGold', 'star', 'shield', 'clock', 'dash', 'dice', 'rain', 'sun', 'moon', 'pearl']) {
     const p = picIcon(k); ART.icon[k] = { c: p.canvas(), w: p.w, h: p.h };
   }
-  ART.bicon = {}; for (const k of ['tent', 'fire', 'fence', 'flower', 'palm', 'shellart', 'flag']) ART.bicon[k] = picBuildIcon(k).canvas();
   ART.mini = {}; for (const k of ['wood', 'stone', 'fruit', 'shell']) ART.mini[k] = picMini(k).canvas();
   ART.part = {
     leaf: [0, 1].map(v => picParticle('leaf', v).canvas()), leafG: [0, 1].map(v => picParticle('leafG', v).canvas()),

@@ -18,17 +18,53 @@ const CharAnim = (() => {
   function load() {
     if (typeof CHAR_ANIMS === 'undefined') return;
     for (const k of Object.keys(CHAR_ANIMS)) {
-      const d = CHAR_ANIMS[k], img = new Image(), set = { d, img, white: null, ready: false };
-      sets[k] = set;
+      const d = CHAR_ANIMS[k], img = new Image(), set = { d, img, white: null, ready: false, skin: null, rules: null, vimg: null, vcache: {}, hat: null, himg: null, hwhite: null, hcache: {} };
+      set.key = k; sets[k] = set;
       img.onload = () => {
         const c = mkCanvas(img.width, img.height), g = c.getContext('2d');
         g.drawImage(img, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
         set.white = c; set.ready = true;
+        buildSkin(set);
       };
       img.src = d.src;
     }
   }
   const has = key => !!(sets[key] && sets[key].ready);
+  // 꾸미기 색 (js/deco.js): 아틀라스 전체를 한 번 색칠해 두고 그것으로 그린다
+  function setSkin(key, rules, name) {
+    const set = sets[key]; if (!set) return;
+    set.rules = rules; set.skin = rules ? name : null;
+    buildSkin(set);
+  }
+  function buildSkin(set) {
+    if (!set.ready) return;
+    if (!set.rules) set.vimg = null;
+    else set.vimg = set.vcache[set.skin] || (set.vcache[set.skin] = Deco.recolor(set.img, set.rules));
+    buildHat(set);
+  }
+  // 꾸미기 모자 (js/hats.js): 색칠한 아틀라스 위에 모자를 그려 둔 것으로 그린다
+  function setHat(hat) { for (const set of Object.values(sets)) { set.hat = hat && hat !== 'basic' ? hat : null; buildHat(set); } }
+  function buildHat(set) {
+    if (!set.ready || !set.hat || typeof Hats === 'undefined') { set.himg = set.hwhite = null; return; }
+    const ck = (set.skin || 'basic') + '.' + set.hat;
+    if (!set.hcache[ck]) {
+      let h = null;
+      try { h = Hats.compose(set.key, set.d, set.img, set.vimg || set.img, set.hat); } catch (e) { console.error(e); }
+      let w = null;
+      if (h) { w = mkCanvas(h.width, h.height); const g = w.getContext('2d'); g.drawImage(h, 0, 0); g.globalCompositeOperation = 'source-in'; g.fillStyle = '#fff'; g.fillRect(0, 0, w.width, w.height); }
+      set.hcache[ck] = { h, w };
+    }
+    set.himg = set.hcache[ck].h; set.hwhite = set.hcache[ck].w;
+  }
+  // 정지(rot) 그림 한 장 (꾸미기 창 미리보기용)
+  function frameCanvas(key, dir, withHat) {
+    const set = sets[key]; if (!set || !set.ready) return null;
+    const d = set.d, A = d.anims.rot || d.anims.idle || d.anims.walk; if (!A) return null;
+    const fr = (A.dirs[dir] || Object.values(A.dirs)[0])[0], cell = d.cell;
+    const c = mkCanvas(cell, cell);
+    c.getContext('2d').drawImage(withHat ? (Hats.compose(key, d, set.img, set.img, withHat) || set.img) : set.img, (fr % d.cols) * cell, Math.floor(fr / d.cols) * cell, cell, cell, 0, 0, cell, cell);
+    return c;
+  }
 
   // 동작+방향에 맞는 프레임 찾기 (없으면 반전·가까운 방향·대체 동작 순)
   function pick(d, anim, face) {
@@ -92,10 +128,10 @@ const CharAnim = (() => {
     c.imageSmoothingEnabled = !!d.smooth;
     c.globalAlpha = o.alpha ?? 1;
     const dx = -d.foot[0] * sc, dy = -d.foot[1] * sc, dw = cell * sc;
-    c.drawImage(set.img, sx, sy, cell, cell, dx, dy, dw, dw);
-    if (o.flash > 0) { c.globalAlpha = o.flash; c.drawImage(set.white, sx, sy, cell, cell, dx, dy, dw, dw); }
+    c.drawImage(set.himg || set.vimg || set.img, sx, sy, cell, cell, dx, dy, dw, dw);
+    if (o.flash > 0) { c.globalAlpha = o.flash; c.drawImage(set.hwhite || set.white, sx, sy, cell, cell, dx, dy, dw, dw); }
     c.restore();
     return true;
   }
-  return { load, has, update, draw, playOnce, st, sets };
+  return { load, has, update, draw, playOnce, setSkin, setHat, frameCanvas, st, sets };
 })();

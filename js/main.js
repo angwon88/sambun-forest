@@ -39,5 +39,8 @@ resizeCanvas();        // 화면 해상도에 맞춘 캔버스 배율
 setupDemo();           // 타이틀 뒤에 보이는 섬
 loadSprites(()=>{ prepCharCanvases(); buildCharSelect(); showCharInfo(); });
 CharAnim.load();      // PixelLab 8방향 애니메이션 (js/char-anims.js)
+Deco.init();          // 꾸미기: 장착한 캐릭터 색 적용, 타이틀 진주 표시
+$('decobtn').addEventListener('click',()=>Deco.open('camp'));
+$('decobtn2').addEventListener('click',()=>Deco.open('camp'));
 if(document.fonts&&document.fonts.load){ document.fonts.load("bold 11px 'Galmuri11'").catch(()=>{}); document.fonts.load("11px 'Galmuri11'").catch(()=>{}); }
 requestAnimationFrame(loop);

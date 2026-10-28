@@ -338,3 +338,95 @@ body.touch #mobilebar{display:flex}
   body.touch #actbtn{width:74px;height:74px;opacity:.85}
   body.touch #foot{display:none}
 }
+
+/* ---------------- 꾸미기 (진주·가게·도감) ---------------- */
+.pearlbadge{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:700;color:#eef2fb;
+  background:var(--ui-bg);box-shadow:var(--px-edge),var(--px-bevel);padding:4px 9px 4px 6px;text-shadow:1px 1px 0 #000}
+/* 타이틀 오른쪽 위: 꾸미기 버튼 (진주 수 표시) */
+#decobtn{top:14px;left:auto;right:14px;background:#ffc4dc;display:flex;align-items:center;gap:7px}
+#decobtn .dmini{display:none}
+#decobtn .pearlnum{display:inline-flex;align-items:center;gap:3px;background:rgba(29,42,31,.85);color:#eef2fb;padding:2px 6px 2px 4px;margin:-2px -4px -2px 0}
+#decobtn .pearlnum img{width:12px;height:12px}
+/* 결과 카드: 이번 판 보상 */
+#reward{font-size:11px;line-height:1.7;text-align:left;margin:-2px 0 10px;background:rgba(160,180,220,.16);padding:7px 10px;
+  box-shadow:inset 0 0 0 2px rgba(90,110,160,.25)}
+#reward:empty{display:none}
+#reward .rwhead{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:700}
+#reward .rwhead b{color:#3b5bb5}
+#reward .rwhead small{margin-left:auto;font-size:11px;font-weight:400;color:#5a6680}
+#reward .rwparts{color:#4a5568;font-weight:400}
+#reward .rwline{font-weight:400}
+#reward .rwline b{color:#c9622a}
+#reward .rwhint{color:#3b5bb5}
+#decobtn2.glow{animation:glowbtn 1.2s steps(3) infinite}
+@keyframes glowbtn{50%{filter:brightness(1.15);transform:translateY(-2px)}}
+/* 꾸미기 창 */
+#decomodal{position:absolute;inset:0;z-index:32;display:none;align-items:center;justify-content:center;background:rgba(6,16,12,.78);padding:16px}
+#decomodal.open{display:flex}
+#decocard{width:min(94vw,452px);max-height:90%;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);padding:16px 16px 12px;position:relative;
+  box-shadow:0 -4px 0 0 var(--paper-edge),0 4px 0 0 var(--paper-edge),-4px 0 0 0 var(--paper-edge),4px 0 0 0 var(--paper-edge),0 12px 0 0 rgba(0,0,0,.4);
+  animation:cardin .3s cubic-bezier(.2,1.6,.4,1)}
+#decocard h3{font-size:14px;text-align:center;letter-spacing:1px;margin-bottom:8px}
+#decoclose{position:absolute;top:8px;right:8px;font-family:inherit;font-size:11px;font-weight:700;color:var(--ink);background:transparent;border:0;
+  width:26px;height:26px;cursor:pointer;line-height:1;box-shadow:0 0 0 2px var(--ink)}
+#decoclose:active{transform:scale(.9)}
+#decotop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:11px}
+#decotop .pearlbadge{font-size:13px}
+#decofriend{font-weight:700;color:#7a4a2a}
+#decofriend small{font-weight:400;color:#7a6f52}
+#decotabs{display:flex;gap:6px;margin-bottom:8px}
+#decotabs button{flex:1;font-family:inherit;font-size:11px;font-weight:700;color:var(--ink);background:#e6dcc0;border:0;padding:7px 4px 8px;cursor:pointer;
+  box-shadow:0 -2px 0 0 var(--ink),0 2px 0 0 var(--ink),-2px 0 0 0 var(--ink),2px 0 0 0 var(--ink),inset 0 -3px 0 0 rgba(0,0,0,.12)}
+#decotabs button.on{background:var(--sun);transform:translateY(-2px)}
+#decobody{overflow-y:auto;flex:1;min-height:120px;padding:2px 4px 6px;margin:0 -4px}
+.dsec{margin-bottom:12px}
+.dhead{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;margin:4px 0 6px;padding-bottom:3px;border-bottom:2px dotted rgba(29,42,31,.2)}
+.dhead img{width:26px;height:26px;image-rendering:pixelated}
+.drow{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.ditem{position:relative;font-family:inherit;color:var(--ink);background:#fbf6e6;border:0;padding:6px 4px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;
+  box-shadow:0 -2px 0 0 #b8ab8a,0 2px 0 0 #b8ab8a,-2px 0 0 0 #b8ab8a,2px 0 0 0 #b8ab8a,inset 0 -3px 0 0 rgba(0,0,0,.07)}
+.ditem:active{transform:translateY(2px)}
+.dpic{height:88px;display:flex;align-items:flex-end;justify-content:center;width:100%;
+  background:radial-gradient(ellipse 60% 22% at 50% 92%,rgba(60,90,50,.22),transparent 70%),linear-gradient(180deg,#e4f0d4,#cfe4b8)}
+.dpic img{image-rendering:pixelated;max-width:100%;display:block}
+.dname{font-size:11px;font-weight:700;line-height:1.3;text-align:center}
+.dstate{font-size:11px;display:inline-flex;align-items:center;gap:2px;padding:1px 6px;min-height:18px;background:rgba(29,42,31,.08)}
+.dstate img.pi{width:12px;height:12px}
+.ditem.eq{background:#eaf7e2;box-shadow:0 -2px 0 0 #3f9a4c,0 2px 0 0 #3f9a4c,-2px 0 0 0 #3f9a4c,2px 0 0 0 #3f9a4c}
+.ditem.eq .dstate{background:#3f9a4c;color:#fff}
+.ditem.own .dstate{background:var(--ink);color:#fbf4e2}
+.ditem.buy .dstate{background:#2c3e78;color:#fff;font-weight:700}
+.ditem.lock .dpic img{filter:brightness(.25) saturate(0);opacity:.55}
+.ditem.lock{background:#ece6d6}
+.ditem.armed{box-shadow:0 -2px 0 0 #e5a52a,0 2px 0 0 #e5a52a,-2px 0 0 0 #e5a52a,2px 0 0 0 #e5a52a,0 0 10px rgba(229,165,42,.7);animation:armed .6s steps(2) infinite}
+.ditem.armed .dstate{background:#ffd94d;color:#3a2600}
+@keyframes armed{50%{transform:translateY(-2px)}}
+.dnew{position:absolute;top:-6px;left:-4px;font-style:normal;font-size:11px;font-weight:700;color:#fff;background:#e9493e;padding:1px 4px;z-index:1;box-shadow:0 0 0 2px var(--paper)}
+.dstats{font-size:11px;display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;margin-bottom:8px;color:#4a5568}
+.dstats img.pi{width:12px;height:12px}
+.dfriend{font-size:11px;background:rgba(140,90,56,.1);padding:7px 9px;margin-bottom:10px;line-height:1.6}
+.dfriend b{color:#8c5a38}
+.dbar{height:6px;background:rgba(0,0,0,.12);margin-top:4px;box-shadow:0 0 0 1px rgba(0,0,0,.2)}
+.dbar i{display:block;height:100%;background:linear-gradient(90deg,#c8885a,#ffc48a)}
+.dach{display:flex;align-items:center;gap:8px;font-size:11px;padding:6px 4px;border-bottom:2px dotted rgba(29,42,31,.13);color:#5a5446}
+.dach.ok{color:var(--ink)}
+.dach .dic{font-size:18px;width:26px;text-align:center;filter:grayscale(1);opacity:.5}
+.dach.ok .dic{filter:none;opacity:1}
+.dach .dtx{flex:1;line-height:1.5}
+.dach .dtx small{color:#7a6f52}
+.dach .drw{font-size:11px;font-weight:700;text-align:right;color:#c9622a;display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.dach .drw img.pi{width:12px;height:12px}
+#decomsg{font-size:11px;min-height:30px;text-align:center;color:#2c5a3a;padding:7px 4px 0;line-height:1.5}
+#decomsg.bad{color:#b8402a}
+#decomsg.pop{animation:msgpop .25s steps(3)}
+@keyframes msgpop{from{transform:scale(1.12)}}
+/* 휴대폰: 꾸미기 버튼은 위쪽 가운데 (랭킹·점수 규칙 사이), 글자 대신 아이콘 */
+@media (max-width:560px){
+  #decomodal{position:fixed;inset:0;padding:10px}
+  #decocard{width:100%;max-height:100%;padding:16px 12px 12px}
+  .drow{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}
+  #decobtn{top:10px;right:auto;left:50%;transform:translateX(-50%);gap:5px}
+  #decobtn:active{transform:translateX(-50%) translateY(3px)}
+  #decobtn .dlabel{display:none}
+  #decobtn .dmini{display:inline}
+}

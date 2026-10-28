@@ -45,6 +45,7 @@ function bumpRes(k){const el=$('r-'+k);el.classList.remove('bump');void el.offse
 let _dayIcon='';
 function hudTick(){
   if(!S||S.demo)return;
+  try{Meta.track();}catch(e){}                // 도감용 기록 (최고 콤보·피격 여부)
   const ph=Math.min(1,S.t/GAME_LEN);
   $('daybar').firstElementChild.style.width=((1-ph)*100).toFixed(2)+'%';
   const ic=ph>0.86?'moon':'sun';
@@ -102,8 +103,8 @@ function storyAdvance(){
   start();
 }
 function start(){
-  audio(); newGame();
-  $('rankmodal').classList.remove('open');
+  audio(); newGame(); Meta.runStart();
+  $('rankmodal').classList.remove('open'); Deco.close();
   $('tidewarn').style.opacity=0; $('tidewarn').classList.remove('urgent');
   $('title').style.display='none'; $('result').style.display='none'; $('hud').style.display='block';
   applyCharTheme();
@@ -116,7 +117,7 @@ function goHome(){
   $('result').style.display='none'; $('hud').style.display='none';
   $('tidewarn').style.opacity=0; $('tidewarn').classList.remove('urgent');
   document.documentElement.style.setProperty('--sun','#ffb04d');   // reset accent
-  buildCharSelect(); showCharInfo();
+  buildCharSelect(); showCharInfo(); Deco.refreshTitle();
   setupDemo();                                                      // 타이틀 뒤 섬 다시 띄우기
   $('title').style.display='flex';
   SFX.select();
@@ -128,7 +129,7 @@ function buildCharSelect(){
   CHARACTERS.forEach((c,i)=>{
     const d=document.createElement('div');
     d.className='charopt'+(i===selectedChar?' sel':'');
-    d.innerHTML='<img src="'+SPRITE_DATA[c.key]+'" alt="'+c.name+'">';
+    d.innerHTML='<img src="'+Deco.portrait(c.key)+'" alt="'+c.name+'">';   // 꾸미기 색 반영
     d.addEventListener('pointerdown',e=>{e.preventDefault();selectedChar=i;setChar(i);buildCharSelect();showCharInfo();SFX.select();});
     row.appendChild(d);
   });
